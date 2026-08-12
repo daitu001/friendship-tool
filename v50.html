@@ -3435,7 +3435,7 @@ const PRODUCT_CODES = Object.keys(PRODUCT_DB).sort();
 
 // ===== 从OSS异步加载最新产品数据 =====
 (function loadLatestProductData() {
-  fetch('https://youyi-01mishu.oss-cn-guangzhou.aliyuncs.com/friendship-tool/product_data.json?t=' + Date.now())
+  fetch('product-data.json?t=' + Date.now())
     .then(function(res) { if (res.ok) return res.json(); throw new Error('Network error'); })
     .then(function(data) {
       // 清空旧数据，填入新数据
