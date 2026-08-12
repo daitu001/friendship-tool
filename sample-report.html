@@ -1242,7 +1242,7 @@ const FriendshipSync = {
       };
     } catch(e) {
       console.error('读取共享数据失败:', e);
-      return { products: {}, colors: {}, factories: {}, customers: {}, lastUpdated: null };
+      return { products: {}, colors: {}, factories: {}, customers: {}, factoryNameMap: {}, factoryColorMap: {}, lastUpdated: null };
     }
   },
   
@@ -1290,6 +1290,54 @@ const FriendshipSync = {
       updatedBy: 'sampleTool',
       updatedAt: new Date().toISOString()
     }, customerInfo || {});
+    return this.saveSharedData(data);
+  },
+
+  // 同步工厂名称->编号映射（土土协作内部使用）
+  syncFactoryNameMap: function(factoryName, factoryCode) {
+    if (!factoryName || !factoryCode) return false;
+    const data = this.getSharedData();
+    if (!data.factoryNameMap) data.factoryNameMap = {};
+    data.factoryNameMap[factoryName] = {
+      code: factoryCode,
+      updatedBy: 'tutuCollab',
+      updatedAt: new Date().toISOString()
+    };
+    return this.saveSharedData(data);
+  },
+
+  // 同步工厂编号+色号->色卡编号映射（土土协作内部使用）
+  syncFactoryColorMap: function(factoryCode, factoryColor, colorCardNo, colorCardColor) {
+    if (!factoryCode || !factoryColor) return false;
+    const data = this.getSharedData();
+    if (!data.factoryColorMap) data.factoryColorMap = {};
+    const key = factoryCode + '_' + factoryColor;
+    data.factoryColorMap[key] = {
+      factoryCode: factoryCode,
+      factoryColor: factoryColor,
+      colorCardNo: colorCardNo || '',
+      colorCardColor: colorCardColor || '',
+      updatedBy: 'tutuCollab',
+      updatedAt: new Date().toISOString()
+    };
+    return this.saveSharedData(data);
+  },
+
+  // 批量同步工厂名称映射
+  syncFactoryNameMapBatch: function(mappings) {
+    if (!mappings || Object.keys(mappings).length === 0) return false;
+    const data = this.getSharedData();
+    if (!data.factoryNameMap) data.factoryNameMap = {};
+    Object.assign(data.factoryNameMap, mappings);
+    return this.saveSharedData(data);
+  },
+
+  // 批量同步工厂色号映射
+  syncFactoryColorMapBatch: function(mappings) {
+    if (!mappings || Object.keys(mappings).length === 0) return false;
+    const data = this.getSharedData();
+    if (!data.factoryColorMap) data.factoryColorMap = {};
+    Object.assign(data.factoryColorMap, mappings);
     return this.saveSharedData(data);
   },
   
@@ -1463,6 +1511,8 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
         <label>客户名称</label>
         <input type="text" id="customerName" placeholder="输入客户公司名称" list="customerNameList" oninput="updateCustomerSuggestions()">
         <datalist id="customerNameList"></datalist>
+        <datalist id="factoryNameSuggestList"></datalist>
+        <datalist id="factoryColorSuggestList"></datalist>
       </div>
       <div style="flex:1">
         <label>贵姓称呼</label>
@@ -2369,6 +2419,8 @@ function updateCustomerSuggestions() {
 // 页面加载时初始化客户联想
 function initCustomerAutocomplete() {
   updateCustomerSuggestions();
+  updateFactoryNameSuggestions();
+  updateFactoryColorSuggestions();
   // 恢复上次填写的客户名称
   try {
     var formState = JSON.parse(localStorage.getItem('lastFormState') || 'null');
@@ -2376,6 +2428,90 @@ function initCustomerAutocomplete() {
       document.getElementById('customerName').value = formState.customerName;
     }
   } catch(e) {}
+}
+
+// 更新工厂名称联想列表（土土协作内部数据）
+function updateFactoryNameSuggestions() {
+  var list = document.getElementById('factoryNameSuggestList');
+  if (!list) return;
+  list.innerHTML = '';
+  var names = [];
+  // 从OSS共享数据读取工厂名称映射
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  if (raw) {
+    try {
+      var sd = JSON.parse(raw);
+      if (sd.factoryNameMap) {
+        Object.keys(sd.factoryNameMap).forEach(function(name) {
+          var info = sd.factoryNameMap[name];
+          var source = (info.updatedBy === 'tutuCollab') ? ' [手动编]' : '';
+          names.push({ name: name, code: info.code, source: source });
+        });
+      }
+    } catch(e) {}
+  }
+  // 从本地localStorage读取
+  var localNames = JSON.parse(localStorage.getItem('factoryNameList') || '[]');
+  localNames.forEach(function(item) {
+    if (!names.find(function(n) { return n.name === item.name; })) {
+      names.push({ name: item.name, code: item.code, source: ' [手动编]' });
+    }
+  });
+  names.forEach(function(item) {
+    var opt = document.createElement('option');
+    opt.value = item.name;
+    opt.label = item.name + ' → ' + item.code + item.source;
+    list.appendChild(opt);
+  });
+}
+
+// 更新工厂色号联想列表（土土协作内部数据）
+function updateFactoryColorSuggestions() {
+  var list = document.getElementById('factoryColorSuggestList');
+  if (!list) return;
+  list.innerHTML = '';
+  var colors = [];
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  if (raw) {
+    try {
+      var sd = JSON.parse(raw);
+      if (sd.factoryColorMap) {
+        Object.keys(sd.factoryColorMap).forEach(function(key) {
+          var info = sd.factoryColorMap[key];
+          var source = (info.updatedBy === 'tutuCollab') ? ' [手动编]' : '';
+          colors.push({
+            display: info.factoryCode + ' ' + info.factoryColor + ' → 色卡:' + (info.colorCardNo || '-') + ' ' + (info.colorCardColor || '') + source,
+            value: info.factoryColor
+          });
+        });
+      }
+    } catch(e) {}
+  }
+  colors.forEach(function(item) {
+    var opt = document.createElement('option');
+    opt.value = item.value;
+    opt.label = item.display;
+    list.appendChild(opt);
+  });
+}
+
+// 工厂名称联想输入处理
+function onFactoryNameInput(inputEl, entryId) {
+  var name = inputEl.value.trim();
+  if (!name) return;
+  // 查找映射表中的对应编号
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  if (raw) {
+    try {
+      var sd = JSON.parse(raw);
+      if (sd.factoryNameMap && sd.factoryNameMap[name]) {
+        var codeEl = document.getElementById('factory-code-' + entryId);
+        if (codeEl) {
+          codeEl.innerHTML = '<div class="entry-value" style="color:#2196F3;">' + sd.factoryNameMap[name].code + ' <span style="font-size:10px;color:#999;">[自动匹配]</span></div>';
+        }
+      }
+    } catch(e) {}
+  }
 }
 
 function saveFactoryRecord() {
@@ -2430,7 +2566,7 @@ function saveFactoryRecord() {
     records: records
   });
   
-  // 保存客户名称到自动补全列表
+  // 保存客户名称到自动补全列表（标记来源为手动编）
   if (customerName) {
     var customers = JSON.parse(localStorage.getItem('customerNames') || '[]');
     if (customers.indexOf(customerName) === -1) {
@@ -2438,6 +2574,24 @@ function saveFactoryRecord() {
     }
     localStorage.setItem('customerNames', JSON.stringify(customers));
   }
+  
+  // 保存工厂名称映射到本地（标记为手动编）
+  var localFactoryNames = JSON.parse(localStorage.getItem('factoryNameList') || '[]');
+  entries.forEach(function(card) {
+    var entryId = card.id.replace('entry-', '');
+    var code = card.querySelector('.product-search')?.value.trim();
+    if (!code) return;
+    var fidx = parseInt(card.querySelector('.selected-factory-idx')?.value || '0');
+    var merged2 = getMergedDB();
+    var items = merged2[code] || [];
+    var factory = items[fidx] || items[0];
+    if (factory && factory.f && factory.fc) {
+      if (!localFactoryNames.find(function(n) { return n.name === factory.f; })) {
+        localFactoryNames.push({ name: factory.f, code: factory.fc, source: '手动编' });
+      }
+    }
+  });
+  localStorage.setItem('factoryNameList', JSON.stringify(localFactoryNames));
   
   // Keep max 50
   if (history.length > 50) history = history.slice(0, 50);
@@ -2457,6 +2611,8 @@ function saveFactoryRecord() {
     var syncProducts = {};
     var syncColors = {};
     var syncFactories = {};
+    var syncFactoryNameMappings = {};
+    var syncFactoryColorMappings = {};
     
     entries.forEach(function(card) {
       var code = card.querySelector('.product-search')?.value.trim();
@@ -2486,6 +2642,29 @@ function saveFactoryRecord() {
           updatedBy: 'sampleTool',
           updatedAt: new Date().toISOString()
         };
+        
+        // 同步工厂名称->编号映射（土土协作内部用）
+        if (factory.f) {
+          syncFactoryNameMappings[factory.f] = {
+            code: factory.fc,
+            updatedBy: 'tutuCollab',
+            updatedAt: new Date().toISOString()
+          };
+        }
+        
+        // 同步工厂编号+色号->色卡映射
+        var fColor = card.querySelector('.factory-color-input')?.value.trim() || '';
+        if (fColor) {
+          var fColorKey = factory.fc + '_' + fColor;
+          syncFactoryColorMappings[fColorKey] = {
+            factoryCode: factory.fc,
+            factoryColor: fColor,
+            colorCardNo: code,
+            colorCardColor: '',
+            updatedBy: 'tutuCollab',
+            updatedAt: new Date().toISOString()
+          };
+        }
       }
       
       // 同步色号
@@ -2513,7 +2692,10 @@ function saveFactoryRecord() {
     
     if (typeof FriendshipSync !== 'undefined') {
       FriendshipSync.syncBatch(syncProducts, syncColors, syncFactories);
-      console.log('[FriendshipSync] 样布工具数据已同步:', Object.keys(syncProducts).length, '个产品,', Object.keys(syncColors).length, '个色号,', Object.keys(syncFactories).length, '个工厂');
+      // 同步工厂名称映射和色号映射（土土协作内部使用，不传给管家）
+      FriendshipSync.syncFactoryNameMapBatch(syncFactoryNameMappings);
+      FriendshipSync.syncFactoryColorMapBatch(syncFactoryColorMappings);
+      console.log('[FriendshipSync] 样布工具数据已同步:', Object.keys(syncProducts).length, '个产品,', Object.keys(syncColors).length, '个色号,', Object.keys(syncFactories).length, '个工厂,', Object.keys(syncFactoryNameMappings).length, '个工厂名映射,', Object.keys(syncFactoryColorMappings).length, '个色号映射');
     }
     // 上传到OSS云端
     uploadSharedDataToOSS().catch(function(e) { console.error('云端上传失败:', e); });
