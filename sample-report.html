@@ -1585,6 +1585,30 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
       <input class="cm-search-box" id="cmSearchBox" type="text" placeholder="搜索产品编号 / 工厂名 / 厂编…" oninput="cmSearch()" autocomplete="off">
       <div class="cm-search-results" id="cmSearchResults"></div>
 
+      <!-- 自编工厂编号/色卡编号/色号 对应区域 -->
+      <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
+        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="flex:1;min-width:100px;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">自编工厂编号</label>
+            <input type="text" id="cmSelfFactoryCode" placeholder="输入工厂编号" list="factoryNameSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmFactoryCodeInput()">
+          </div>
+          <div style="flex:1;min-width:100px;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">自编色卡编号</label>
+            <input type="text" id="cmSelfColorCardNo" placeholder="输入色卡编号" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
+          </div>
+          <div style="flex:1;min-width:80px;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">色号</label>
+            <input type="text" id="cmSelfColorNo" placeholder="输入色号" list="factoryColorSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmColorNoInput()">
+          </div>
+          <div style="padding-top:14px;">
+            <button onclick="cmSaveCustomMapping()" style="padding:7px 14px;background:#4CAF50;color:#fff;border:none;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap;">💾 保存对应</button>
+          </div>
+        </div>
+        <!-- 已保存的对应关系列表 -->
+        <div id="cmMappingList" style="margin-top:8px;max-height:150px;overflow-y:auto;"></div>
+      </div>
+
       <!-- Step 2: Selected product info -->
       <div class="cm-product-info" id="cmProductInfo">
         <div class="cm-prod-title" id="cmProdTitle"></div>
@@ -3126,6 +3150,8 @@ function openColorMgmt() {
   document.getElementById('cmActionsRow').style.display = 'none';
   document.getElementById('cmEmptyTip').style.display = 'block';
   cmCurrentCode = null;
+  // 加载已保存的对应关系列表
+  if (typeof cmLoadMappingList === 'function') cmLoadMappingList();
   setTimeout(function() { document.getElementById('cmSearchBox').focus(); }, 100);
 }
 
@@ -3229,6 +3255,131 @@ function cmBuildRow(customerColor, factoryColor) {
 function cmEsc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// 自编工厂编号输入时，自动联想匹配
+function onCmFactoryCodeInput() {
+  var code = document.getElementById('cmSelfFactoryCode').value.trim();
+  if (!code) return;
+  // 从映射表查找对应的工厂名称
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  if (!raw) return;
+  try {
+    var sd = JSON.parse(raw);
+    if (sd.factoryNameMap) {
+      // 反查：编号 -> 名称
+      Object.keys(sd.factoryNameMap).forEach(function(name) {
+        if (sd.factoryNameMap[name].code === code) {
+          document.getElementById('cmSelfFactoryCode').title = '对应工厂: ' + name + (sd.factoryNameMap[name].updatedBy === 'tutuCollab' ? ' [手动编]' : '');
+        }
+      });
+    }
+  } catch(e) {}
+}
+
+// 色号输入时，自动联想匹配色卡编号
+function onCmColorNoInput() {
+  var colorNo = document.getElementById('cmSelfColorNo').value.trim();
+  var factoryCode = document.getElementById('cmSelfFactoryCode').value.trim();
+  if (!colorNo || !factoryCode) return;
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  if (!raw) return;
+  try {
+    var sd = JSON.parse(raw);
+    if (sd.factoryColorMap) {
+      var key = factoryCode + '_' + colorNo;
+      if (sd.factoryColorMap[key]) {
+        var info = sd.factoryColorMap[key];
+        if (info.colorCardNo && !document.getElementById('cmSelfColorCardNo').value) {
+          document.getElementById('cmSelfColorCardNo').value = info.colorCardNo;
+          document.getElementById('cmSelfColorCardNo').title = '自动匹配' + (info.updatedBy === 'tutuCollab' ? ' [手动编]' : '');
+        }
+      }
+    }
+  } catch(e) {}
+}
+
+// 保存自编对应关系到OSS
+function cmSaveCustomMapping() {
+  var factoryCode = document.getElementById('cmSelfFactoryCode').value.trim();
+  var colorCardNo = document.getElementById('cmSelfColorCardNo').value.trim();
+  var colorNo = document.getElementById('cmSelfColorNo').value.trim();
+  if (!factoryCode && !colorCardNo && !colorNo) {
+    showToast('请至少填写一项');
+    return;
+  }
+  // 保存到factoryColorMap
+  if (factoryCode && colorNo) {
+    if (typeof FriendshipSync !== 'undefined' && FriendshipSync.syncFactoryColorMap) {
+      FriendshipSync.syncFactoryColorMap(factoryCode, colorNo, colorCardNo, '');
+    }
+  }
+  // 保存到本地映射列表
+  var localList = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
+  localList.push({
+    factoryCode: factoryCode,
+    colorCardNo: colorCardNo,
+    colorNo: colorNo,
+    source: '手动编',
+    time: new Date().toLocaleString()
+  });
+  localStorage.setItem('cmCustomMappings', JSON.stringify(localList));
+  // 上传到OSS
+  if (typeof uploadSharedDataToOSS === 'function') {
+    uploadSharedDataToOSS().catch(function(e) { console.error(e); });
+  }
+  cmLoadMappingList();
+  showToast('✅ 对应关系已保存 [手动编]');
+  // 清空输入
+  document.getElementById('cmSelfFactoryCode').value = '';
+  document.getElementById('cmSelfColorCardNo').value = '';
+  document.getElementById('cmSelfColorNo').value = '';
+}
+
+// 加载并显示已保存的对应关系列表
+function cmLoadMappingList() {
+  var listEl = document.getElementById('cmMappingList');
+  if (!listEl) return;
+  var localList = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
+  // 同时从OSS读取
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  var ossMappings = [];
+  if (raw) {
+    try {
+      var sd = JSON.parse(raw);
+      if (sd.factoryColorMap) {
+        Object.keys(sd.factoryColorMap).forEach(function(key) {
+          var info = sd.factoryColorMap[key];
+          ossMappings.push({
+            factoryCode: info.factoryCode,
+            colorCardNo: info.colorCardNo || '',
+            colorNo: info.factoryColor || '',
+            source: info.updatedBy === 'tutuCollab' ? '手动编' : '云端',
+            time: info.updatedAt ? new Date(info.updatedAt).toLocaleString() : ''
+          });
+        });
+      }
+    } catch(e) {}
+  }
+  // 合并去重
+  var allMappings = ossMappings.slice();
+  localList.forEach(function(item) {
+    if (!allMappings.find(function(m) { return m.factoryCode === item.factoryCode && m.colorNo === item.colorNo; })) {
+      allMappings.push(item);
+    }
+  });
+  if (allMappings.length === 0) {
+    listEl.innerHTML = '<div style="font-size:11px;color:#999;text-align:center;padding:4px;">暂无对应关系记录</div>';
+    return;
+  }
+  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+  html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">自编工厂编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">自编色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">来源</th></tr>';
+  allMappings.forEach(function(m) {
+    var srcTag = m.source === '手动编' ? '<span style="background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;">手动编</span>' : '<span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;font-size:10px;">云端</span>';
+    html += '<tr><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.colorNo || '-') + '</td><td style="padding:3px 6px;text-align:center;">' + srcTag + '</td></tr>';
+  });
+  html += '</table>';
+  listEl.innerHTML = html;
 }
 
 function cmAddColorRow() {
