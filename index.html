@@ -235,7 +235,7 @@
 
     <button class="update-btn" onclick="showUpdateModal()">🔄 更新版本</button>
 
-    <div class="footer">云端版 v2.0.0</div>
+    <div class="footer">云端版 v2.1.0 · 更新于 2026-08-12</div>
   </div>
 
   <!-- 模态框 -->
@@ -244,12 +244,19 @@
       <div class="modal-header">版本更新</div>
       <div class="modal-body">
         <div class="update-log" id="updateLog">
-          <h3>v2.0.0 更新内容</h3>
+          <h3>v2.1.0 更新内容（2026-08-12）</h3>
+          <ul>
+            <li>色号管理改版：第一排「色卡编号* | 工厂名称* | 工厂编号*」缩小 + 右侧「💾 保存对应」按钮</li>
+            <li>第二排「自编色号 → 工厂色号」</li>
+            <li>保存对应后自动展开色号列表，无色号时自动生成 1-10 号槽位</li>
+            <li>对应关系列表显示：色卡编号 | 工厂名称 | 工厂编号 | 自编色号 | 工厂色号 | 来源（手动编/云端）</li>
+          </ul>
+          <h3 style="margin-top:12px;">v2.0.0 更新内容</h3>
           <ul>
             <li>新增云端部署，刷新即最新版</li>
-            <li>优化文件大小，加载更快</li>
-            <li>新增版本更新功能</li>
-            <li>修复多个已知问题</li>
+            <li>客户名称自动联想 + 云端同步</li>
+            <li>工厂名称/色号联想映射 + [手动编] 标记</li>
+            <li>修复返回按钮 404</li>
           </ul>
         </div>
         <div class="progress-container" id="progressContainer">
