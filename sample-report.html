@@ -3249,7 +3249,7 @@ function cmSelectProduct(code) {
       var colorNo = i + '#';
       html += '<div class="cm-color-row">' +
         '<div class="cm-customer-color">' + colorNo + '</div>' +
-        '<input class="cm-factory-input" type="text" value="" data-cc="' + colorNo + '" placeholder="输入工厂色号">' +
+        '<input class="cm-factory-input" type="text" value="" data-cc="' + colorNo + '" placeholder="输入工厂色号" onblur="cmAutoSaveColor(this)">' +
         '<button class="cm-del-btn" onclick="cmDelRow(this)" title="删除">✕</button>' +
         '</div>';
     }
@@ -3270,7 +3270,7 @@ function cmSelectProduct(code) {
 function cmBuildRow(customerColor, factoryColor) {
   return '<div class="cm-color-row">' +
     '<div class="cm-customer-color">' + cmEsc(customerColor) + '</div>' +
-    '<input class="cm-factory-input" type="text" value="' + cmEsc(factoryColor) + '" data-cc="' + cmEsc(customerColor) + '" placeholder="工厂色号">' +
+    '<input class="cm-factory-input" type="text" value="' + cmEsc(factoryColor) + '" data-cc="' + cmEsc(customerColor) + '" placeholder="工厂色号" onblur="cmAutoSaveColor(this)">' +
     '<button class="cm-del-btn" onclick="cmDelRow(this)" title="删除">✕</button>' +
     '</div>';
 }
@@ -3454,6 +3454,30 @@ function cmAddColorRow() {
 
 function cmDelRow(btn) {
   btn.parentElement.remove();
+}
+
+// 色号输入框失去焦点时自动保存
+function cmAutoSaveColor(inputEl) {
+  var colorNo = inputEl.getAttribute('data-cc');
+  var factoryColor = inputEl.value.trim();
+  if (!colorNo || !factoryColor) return;
+  if (!cmCurrentCode) return;
+  // 更新到 userColors
+  if (!userColors[cmCurrentCode]) userColors[cmCurrentCode] = {};
+  userColors[cmCurrentCode][colorNo] = factoryColor;
+  localStorage.setItem('userColors', JSON.stringify(userColors));
+  // 同步到 FriendshipSync
+  if (typeof FriendshipSync !== 'undefined' && FriendshipSync.syncColors) {
+    var syncColors = {};
+    syncColors[cmCurrentCode] = {
+      colorCode: cmCurrentCode,
+      colors: userColors[cmCurrentCode],
+      updatedBy: 'tutuCollab',
+      updatedAt: new Date().toISOString()
+    };
+    FriendshipSync.syncColors(syncColors);
+  }
+  showToast('✅ ' + colorNo + ' → ' + factoryColor);
 }
 
 function cmSaveColors() {
