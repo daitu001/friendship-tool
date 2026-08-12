@@ -1585,23 +1585,36 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
       <input class="cm-search-box" id="cmSearchBox" type="text" placeholder="搜索产品编号 / 工厂名 / 厂编…" oninput="cmSearch()" autocomplete="off">
       <div class="cm-search-results" id="cmSearchResults"></div>
 
-      <!-- 自编工厂编号/色卡编号/色号 对应区域 -->
+      <!-- 自编对应关系区域 - V4布局 -->
       <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
         <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <div style="flex:1;min-width:100px;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">自编工厂编号</label>
-            <input type="text" id="cmSelfFactoryCode" placeholder="输入工厂编号" list="factoryNameSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmFactoryCodeInput()">
+        <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 -->
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">色卡编号<span style="color:#ff4d4f;">*</span></label>
+            <input type="text" id="cmSelfColorCardNo" placeholder="如: 80001" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
           </div>
-          <div style="flex:1;min-width:100px;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">自编色卡编号</label>
-            <input type="text" id="cmSelfColorCardNo" placeholder="输入色卡编号" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">工厂名称<span style="color:#ff4d4f;">*</span></label>
+            <input type="text" id="cmSelfFactoryName" placeholder="输入工厂名称" list="factoryNameSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
           </div>
-          <div style="flex:1;min-width:80px;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">色号</label>
-            <input type="text" id="cmSelfColorNo" placeholder="输入色号" list="factoryColorSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmColorNoInput()">
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">工厂编号<span style="color:#ff4d4f;">*</span></label>
+            <input type="text" id="cmSelfFactoryCode" placeholder="如: 18453" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmFactoryCodeInput()">
           </div>
-          <div style="padding-top:14px;">
+        </div>
+        <!-- 第二排：自编色号 → 工厂色号 -->
+        <div style="display:flex;gap:6px;align-items:flex-end;">
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">自编色号</label>
+            <input type="text" id="cmSelfColorNo" placeholder="如: 1#" list="factoryColorSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmColorNoInput()">
+          </div>
+          <div style="padding:0 4px;padding-bottom:8px;font-size:16px;color:#11998e;font-weight:bold;">→</div>
+          <div style="flex:1;">
+            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">工厂色号</label>
+            <input type="text" id="cmSelfFactoryColor" placeholder="如: 80555-1" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
+          </div>
+          <div style="padding-bottom:2px;">
             <button onclick="cmSaveCustomMapping()" style="padding:7px 14px;background:#4CAF50;color:#fff;border:none;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap;">💾 保存对应</button>
           </div>
         </div>
@@ -3301,25 +3314,35 @@ function onCmColorNoInput() {
 
 // 保存自编对应关系到OSS
 function cmSaveCustomMapping() {
-  var factoryCode = document.getElementById('cmSelfFactoryCode').value.trim();
   var colorCardNo = document.getElementById('cmSelfColorCardNo').value.trim();
+  var factoryName = document.getElementById('cmSelfFactoryName').value.trim();
+  var factoryCode = document.getElementById('cmSelfFactoryCode').value.trim();
   var colorNo = document.getElementById('cmSelfColorNo').value.trim();
-  if (!factoryCode && !colorCardNo && !colorNo) {
-    showToast('请至少填写一项');
+  var factoryColor = document.getElementById('cmSelfFactoryColor').value.trim();
+  if (!colorCardNo || !factoryName || !factoryCode) {
+    showToast('色卡编号、工厂名称、工厂编号为必填项');
     return;
   }
   // 保存到factoryColorMap
   if (factoryCode && colorNo) {
     if (typeof FriendshipSync !== 'undefined' && FriendshipSync.syncFactoryColorMap) {
-      FriendshipSync.syncFactoryColorMap(factoryCode, colorNo, colorCardNo, '');
+      FriendshipSync.syncFactoryColorMap(factoryCode, colorNo, colorCardNo, factoryColor);
+    }
+  }
+  // 保存工厂名称映射
+  if (factoryName && factoryCode) {
+    if (typeof FriendshipSync !== 'undefined' && FriendshipSync.syncFactoryNameMap) {
+      FriendshipSync.syncFactoryNameMap(factoryName, factoryCode);
     }
   }
   // 保存到本地映射列表
   var localList = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
   localList.push({
-    factoryCode: factoryCode,
     colorCardNo: colorCardNo,
+    factoryName: factoryName,
+    factoryCode: factoryCode,
     colorNo: colorNo,
+    factoryColor: factoryColor,
     source: '手动编',
     time: new Date().toLocaleString()
   });
@@ -3351,9 +3374,11 @@ function cmLoadMappingList() {
         Object.keys(sd.factoryColorMap).forEach(function(key) {
           var info = sd.factoryColorMap[key];
           ossMappings.push({
-            factoryCode: info.factoryCode,
             colorCardNo: info.colorCardNo || '',
+            factoryName: info.factoryName || '',
+            factoryCode: info.factoryCode,
             colorNo: info.factoryColor || '',
+            factoryColor: info.factoryColor || '',
             source: info.updatedBy === 'tutuCollab' ? '手动编' : '云端',
             time: info.updatedAt ? new Date(info.updatedAt).toLocaleString() : ''
           });
@@ -3373,10 +3398,10 @@ function cmLoadMappingList() {
     return;
   }
   var html = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-  html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">自编工厂编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">自编色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">来源</th></tr>';
+  html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂名称</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">自编色号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂色号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">来源</th></tr>';
   allMappings.forEach(function(m) {
     var srcTag = m.source === '手动编' ? '<span style="background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;">手动编</span>' : '<span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;font-size:10px;">云端</span>';
-    html += '<tr><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.colorNo || '-') + '</td><td style="padding:3px 6px;text-align:center;">' + srcTag + '</td></tr>';
+    html += '<tr><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryName || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;">' + (m.colorNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryColor || '-') + '</td><td style="padding:3px 6px;text-align:center;">' + srcTag + '</td></tr>';
   });
   html += '</table>';
   listEl.innerHTML = html;
