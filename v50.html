@@ -378,7 +378,7 @@ const FriendshipSync = {
       };
     } catch(e) {
       console.error('读取共享数据失败:', e);
-      return { products: {}, colors: {}, factories: {}, lastUpdated: null };
+      return { products: {}, colors: {}, factories: {}, customers: {}, lastUpdated: null };
     }
   },
   
@@ -414,6 +414,18 @@ const FriendshipSync = {
   syncFactory: function(factoryCode, factoryInfo) {
     const data = this.getSharedData();
     data.factories[factoryCode] = factoryInfo;
+    return this.saveSharedData(data);
+  },
+  
+  // 同步客户数据
+  syncCustomer: function(customerName, customerInfo) {
+    const data = this.getSharedData();
+    if (!data.customers) data.customers = {};
+    data.customers[customerName] = Object.assign({
+      name: customerName,
+      updatedBy: 'sampleTool',
+      updatedAt: new Date().toISOString()
+    }, customerInfo || {});
     return this.saveSharedData(data);
   },
   
@@ -483,6 +495,7 @@ if (typeof window !== 'undefined') {
       console.warn('[SharedSync] 初始云端下载失败:', e);
     }
     loadSharedDataIntoV50();
+    initCustomerAutocompleteV50();
     
     // 启动定时同步（每30秒）
     setInterval(async function() {
@@ -518,6 +531,8 @@ function refreshAfterSync() {
         Object.keys(shared.factories || {}).length, '个工厂');
     }
   }
+  // 刷新客户名称联想
+  if (typeof initCustomerAutocompleteV50 === 'function') initCustomerAutocompleteV50();
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/ali-oss@6.21.0/dist/aliyun-oss-sdk.min.js"></script>
@@ -780,7 +795,8 @@ window.addEventListener('load',function(){
       <div style="display: flex; gap: 12px; flex: 1;">
         <div style="flex: 1;">
           <label style="font-size: 11px; color: #999; margin-bottom: 3px; display: block; font-weight: 600;">客户名称</label>
-          <input type="text" id="globalCustomer" placeholder="输入客户名称" style="width: 100%; padding: 7px 10px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 14px; outline: none;">
+          <input type="text" id="globalCustomer" placeholder="输入客户名称" list="customerNameListV50" oninput="updateCustomerSuggestionsV50()" style="width: 100%; padding: 7px 10px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 14px; outline: none;">
+          <datalist id="customerNameListV50"></datalist>
         </div>
         <div style="flex: 1;">
           <label style="font-size: 11px; color: #999; margin-bottom: 3px; display: block; font-weight: 600;">色卡编号</label>
@@ -1262,6 +1278,41 @@ async function doUpdate(newUrl) {
   setTimeout(function() {
     window.location.href = newUrl;
   }, 800);
+}
+
+// 客户名称自动联想 (大货报单)
+function updateCustomerSuggestionsV50() {
+  var input = document.getElementById('globalCustomer');
+  if (!input) return;
+  var list = document.getElementById('customerNameListV50');
+  if (!list) return;
+  list.innerHTML = '';
+  var customers = JSON.parse(localStorage.getItem('customerNames') || '[]');
+  // Also get from shared data
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  if (raw) {
+    try {
+      var sd = JSON.parse(raw);
+      if (sd.customers) {
+        var sc = sd.customers;
+        if (typeof sc === 'object' && !Array.isArray(sc)) {
+          Object.keys(sc).forEach(function(k) { if (customers.indexOf(k) === -1) customers.push(k); });
+        } else if (Array.isArray(sc)) {
+          sc.forEach(function(c) { if (customers.indexOf(c) === -1) customers.push(c); });
+        }
+      }
+    } catch(e) {}
+  }
+  customers.forEach(function(name) {
+    var opt = document.createElement('option');
+    opt.value = name;
+    list.appendChild(opt);
+  });
+}
+
+// 页面加载时初始化客户联想
+function initCustomerAutocompleteV50() {
+  updateCustomerSuggestionsV50();
 }
 
 let rows = [];
@@ -1884,9 +1935,24 @@ async function saveData() {
   localStorage.setItem('meterConverterData', JSON.stringify(clearedWorkData));
   ossSaveWorkData(clearedWorkData);
 
+  // 保存客户名称到自动补全列表
+  if (customer) {
+    var customers = JSON.parse(localStorage.getItem('customerNames') || '[]');
+    if (customers.indexOf(customer) === -1) {
+      customers.push(customer);
+    }
+    localStorage.setItem('customerNames', JSON.stringify(customers));
+  }
+
   // === 同步数据到共享存储 ===
   (function() {
     if (typeof FriendshipSync === 'undefined') return;
+    
+    // 同步客户名称
+    if (customer && typeof FriendshipSync.syncCustomer === 'function') {
+      FriendshipSync.syncCustomer(customer);
+    }
+    
     var syncColors = {};
     var syncProducts = {};
     

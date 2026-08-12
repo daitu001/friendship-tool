@@ -1242,7 +1242,7 @@ const FriendshipSync = {
       };
     } catch(e) {
       console.error('读取共享数据失败:', e);
-      return { products: {}, colors: {}, factories: {}, lastUpdated: null };
+      return { products: {}, colors: {}, factories: {}, customers: {}, lastUpdated: null };
     }
   },
   
@@ -1278,6 +1278,18 @@ const FriendshipSync = {
   syncFactory: function(factoryCode, factoryInfo) {
     const data = this.getSharedData();
     data.factories[factoryCode] = factoryInfo;
+    return this.saveSharedData(data);
+  },
+  
+  // 同步客户数据
+  syncCustomer: function(customerName, customerInfo) {
+    const data = this.getSharedData();
+    if (!data.customers) data.customers = {};
+    data.customers[customerName] = Object.assign({
+      name: customerName,
+      updatedBy: 'sampleTool',
+      updatedAt: new Date().toISOString()
+    }, customerInfo || {});
     return this.saveSharedData(data);
   },
   
@@ -1382,6 +1394,8 @@ if (typeof window !== 'undefined') {
     }
     // 再执行本地合并
     loadSharedDataIntoSampleTool();
+    // 初始化客户名称联想
+    initCustomerAutocomplete();
   }
   
   if (document.readyState === 'loading') {
@@ -1415,6 +1429,8 @@ function refreshAfterSync() {
     window.userProducts = JSON.parse(localStorage.getItem('userProducts') || '{}');
     window.userColors = JSON.parse(localStorage.getItem('userColors') || '{}');
   }
+  // 刷新客户名称联想
+  if (typeof initCustomerAutocomplete === 'function') initCustomerAutocomplete();
 }
 
 </script>
@@ -1445,7 +1461,8 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
     <div class="customer-row">
       <div style="flex:1">
         <label>客户名称</label>
-        <input type="text" id="customerName" placeholder="输入客户公司名称">
+        <input type="text" id="customerName" placeholder="输入客户公司名称" list="customerNameList" oninput="updateCustomerSuggestions()">
+        <datalist id="customerNameList"></datalist>
       </div>
       <div style="flex:1">
         <label>贵姓称呼</label>
@@ -2319,6 +2336,48 @@ function copyToFactory() {
   showCopyPreview(text, '✅ 已复制给工厂格式');
 }
 
+// 客户名称自动联想
+function updateCustomerSuggestions() {
+  var input = document.getElementById('customerName');
+  if (!input) return;
+  var list = document.getElementById('customerNameList');
+  if (!list) return;
+  list.innerHTML = '';
+  var customers = JSON.parse(localStorage.getItem('customerNames') || '[]');
+  // Also get from shared data
+  var raw = localStorage.getItem('friendshipTool_sharedData');
+  if (raw) {
+    try {
+      var sd = JSON.parse(raw);
+      if (sd.customers) {
+        var sc = sd.customers;
+        if (typeof sc === 'object' && !Array.isArray(sc)) {
+          Object.keys(sc).forEach(function(k) { if (customers.indexOf(k) === -1) customers.push(k); });
+        } else if (Array.isArray(sc)) {
+          sc.forEach(function(c) { if (customers.indexOf(c) === -1) customers.push(c); });
+        }
+      }
+    } catch(e) {}
+  }
+  customers.forEach(function(name) {
+    var opt = document.createElement('option');
+    opt.value = name;
+    list.appendChild(opt);
+  });
+}
+
+// 页面加载时初始化客户联想
+function initCustomerAutocomplete() {
+  updateCustomerSuggestions();
+  // 恢复上次填写的客户名称
+  try {
+    var formState = JSON.parse(localStorage.getItem('lastFormState') || 'null');
+    if (formState && formState.customerName) {
+      document.getElementById('customerName').value = formState.customerName;
+    }
+  } catch(e) {}
+}
+
 function saveFactoryRecord() {
   var entries = document.querySelectorAll('.entry-card');
   if (entries.length === 0) {
@@ -2370,6 +2429,15 @@ function saveFactoryRecord() {
     customer: customerName + ' ' + customerTitle,
     records: records
   });
+  
+  // 保存客户名称到自动补全列表
+  if (customerName) {
+    var customers = JSON.parse(localStorage.getItem('customerNames') || '[]');
+    if (customers.indexOf(customerName) === -1) {
+      customers.push(customerName);
+    }
+    localStorage.setItem('customerNames', JSON.stringify(customers));
+  }
   
   // Keep max 50
   if (history.length > 50) history = history.slice(0, 50);
@@ -2437,6 +2505,11 @@ function saveFactoryRecord() {
         }
       });
     });
+    
+    // 同步客户名称
+    if (customerName && typeof FriendshipSync !== 'undefined') {
+      FriendshipSync.syncCustomer(customerName);
+    }
     
     if (typeof FriendshipSync !== 'undefined') {
       FriendshipSync.syncBatch(syncProducts, syncColors, syncFactories);
