@@ -3243,7 +3243,17 @@ function cmSelectProduct(code) {
 
   var tableEl = document.getElementById('cmColorTable');
   if (keys.length === 0) {
-    tableEl.innerHTML = '<div class="cm-empty-tip">该产品暂无色号映射，点击下方按钮添加</div>';
+    // 没有色号时，自动生成1-10号空白色号槽位
+    var html = '<div style="font-size:12px;color:#999;margin-bottom:8px;">💡 无色号，自动生成1-10号槽位，请填写工厂色号</div>';
+    for (var i = 1; i <= 10; i++) {
+      var colorNo = i + '#';
+      html += '<div class="cm-color-row">' +
+        '<div class="cm-customer-color">' + colorNo + '</div>' +
+        '<input class="cm-factory-input" type="text" value="" data-cc="' + colorNo + '" placeholder="输入工厂色号">' +
+        '<button class="cm-del-btn" onclick="cmDelRow(this)" title="删除">✕</button>' +
+        '</div>';
+    }
+    tableEl.innerHTML = html;
   } else {
     var html = '';
     for (var i = 0; i < keys.length; i++) {
@@ -3353,10 +3363,13 @@ function cmSaveCustomMapping() {
   }
   cmLoadMappingList();
   showToast('✅ 对应关系已保存 [手动编]');
-  // 清空输入
-  document.getElementById('cmSelfFactoryCode').value = '';
-  document.getElementById('cmSelfColorCardNo').value = '';
+  // 保存后自动展开色号列表，用色卡编号作为产品代码
+  if (colorCardNo) {
+    cmSelectProduct(colorCardNo);
+  }
+  // 清空输入（保留色卡编号方便继续填色号）
   document.getElementById('cmSelfColorNo').value = '';
+  document.getElementById('cmSelfFactoryColor').value = '';
 }
 
 // 加载并显示已保存的对应关系列表
