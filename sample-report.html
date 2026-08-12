@@ -1588,34 +1588,34 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
       <!-- 自编对应关系区域 - V4布局 -->
       <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
         <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）</div>
-        <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 -->
-        <div style="display:flex;gap:6px;margin-bottom:6px;">
-          <div style="flex:1;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">色卡编号<span style="color:#ff4d4f;">*</span></label>
-            <input type="text" id="cmSelfColorCardNo" placeholder="如: 80001" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
+        <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 | 保存按钮 -->
+        <div style="display:flex;gap:4px;margin-bottom:6px;align-items:flex-end;">
+          <div style="flex:0.8;">
+            <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">色卡编号<span style="color:#ff4d4f;">*</span></label>
+            <input type="text" id="cmSelfColorCardNo" placeholder="80001" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;">
           </div>
-          <div style="flex:1;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">工厂名称<span style="color:#ff4d4f;">*</span></label>
-            <input type="text" id="cmSelfFactoryName" placeholder="输入工厂名称" list="factoryNameSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
+          <div style="flex:0.8;">
+            <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">工厂名称<span style="color:#ff4d4f;">*</span></label>
+            <input type="text" id="cmSelfFactoryName" placeholder="智源" list="factoryNameSuggestList" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;">
           </div>
-          <div style="flex:1;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">工厂编号<span style="color:#ff4d4f;">*</span></label>
-            <input type="text" id="cmSelfFactoryCode" placeholder="如: 18453" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmFactoryCodeInput()">
+          <div style="flex:0.8;">
+            <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">工厂编号<span style="color:#ff4d4f;">*</span></label>
+            <input type="text" id="cmSelfFactoryCode" placeholder="18453" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;" oninput="onCmFactoryCodeInput()">
+          </div>
+          <div style="flex:0 0 auto;padding-bottom:1px;">
+            <button onclick="cmSaveCustomMapping()" style="padding:5px 10px;background:#4CAF50;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;white-space:nowrap;">💾 保存对应</button>
           </div>
         </div>
         <!-- 第二排：自编色号 → 工厂色号 -->
-        <div style="display:flex;gap:6px;align-items:flex-end;">
+        <div style="display:flex;gap:4px;align-items:flex-end;">
           <div style="flex:1;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">自编色号</label>
-            <input type="text" id="cmSelfColorNo" placeholder="如: 1#" list="factoryColorSuggestList" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;" oninput="onCmColorNoInput()">
+            <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">自编色号</label>
+            <input type="text" id="cmSelfColorNo" placeholder="1#" list="factoryColorSuggestList" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;" oninput="onCmColorNoInput()">
           </div>
-          <div style="padding:0 4px;padding-bottom:8px;font-size:16px;color:#11998e;font-weight:bold;">→</div>
+          <div style="padding:0 2px;padding-bottom:6px;font-size:14px;color:#11998e;font-weight:bold;">→</div>
           <div style="flex:1;">
-            <label style="font-size:11px;color:#999;display:block;margin-bottom:2px;">工厂色号</label>
-            <input type="text" id="cmSelfFactoryColor" placeholder="如: 80555-1" style="width:100%;padding:7px 10px;border:1px solid #e0e0e0;border-radius:5px;font-size:13px;box-sizing:border-box;outline:none;">
-          </div>
-          <div style="padding-bottom:2px;">
-            <button onclick="cmSaveCustomMapping()" style="padding:7px 14px;background:#4CAF50;color:#fff;border:none;border-radius:5px;font-size:12px;cursor:pointer;white-space:nowrap;">💾 保存对应</button>
+            <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">工厂色号</label>
+            <input type="text" id="cmSelfFactoryColor" placeholder="80555-1" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;">
           </div>
         </div>
         <!-- 已保存的对应关系列表 -->
