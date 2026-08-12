@@ -1587,7 +1587,7 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
 
       <!-- 自编对应关系区域 - V4布局 -->
       <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
-        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.0</span></div>
+        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.5</span></div>
         <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 | 保存按钮 -->
         <div style="display:flex;gap:4px;margin-bottom:6px;align-items:flex-end;">
           <div style="flex:0.8;">
@@ -3345,14 +3345,14 @@ function cmSaveCustomMapping() {
   }
   cmLoadMappingList();
   showToast('✅ 对应关系已保存 [手动编]');
-  // 保存后自动展开色号列表，用色卡编号作为产品代码
-  if (colorCardNo) {
-    cmSelectProduct(colorCardNo);
-  }
-  // 清空输入
+  // 先清空第一排输入框（防止后续代码异常导致清不掉）
   document.getElementById('cmSelfColorCardNo').value = '';
   document.getElementById('cmSelfFactoryName').value = '';
   document.getElementById('cmSelfFactoryCode').value = '';
+  // 保存后自动展开色号列表，用色卡编号作为产品代码
+  if (colorCardNo) {
+    try { cmSelectProduct(colorCardNo); } catch(e) { console.error('展开色号列表失败:', e); }
+  }
 }
 
 // 加载并显示已保存的对应关系列表
@@ -3394,10 +3394,10 @@ function cmLoadMappingList() {
     return;
   }
   var html = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-  html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂名称</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">自编色号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂色号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">来源</th></tr>';
+  html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂名称</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂编号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;white-space:nowrap;">来源</th></tr>';
   allMappings.forEach(function(m) {
-    var srcTag = m.source === '手动编' ? '<span style="background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;">手动编</span>' : '<span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;font-size:10px;">云端</span>';
-    html += '<tr><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryName || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;">' + (m.colorNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryColor || '-') + '</td><td style="padding:3px 6px;text-align:center;">' + srcTag + '</td></tr>';
+    var srcTag = m.source === '手动编' ? '<span style="background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;white-space:nowrap;">手动编</span>' : '<span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;font-size:10px;white-space:nowrap;">云端</span>';
+    html += '<tr><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryName || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;text-align:center;white-space:nowrap;">' + srcTag + '</td></tr>';
   });
   html += '</table>';
   listEl.innerHTML = html;

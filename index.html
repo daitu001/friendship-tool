@@ -200,7 +200,7 @@
     </div>
 
     <div class="menu">
-      <a href="sample-report.html?v=2.1.4" class="menu-item" target="_blank">
+      <a href="sample-report.html?v=2.1.5" class="menu-item" target="_blank">
         <div class="menu-row">
           <div class="menu-icon icon-sample">📋</div>
           <div class="menu-text">样布报单</div>
@@ -208,7 +208,7 @@
         </div>
       </a>
 
-      <a href="v50.html?v=2.1.4" class="menu-item" target="_blank">
+      <a href="v50.html?v=2.1.5" class="menu-item" target="_blank">
         <div class="menu-row">
           <div class="menu-icon icon-cargo">📦</div>
           <div class="menu-text">大货报单</div>
@@ -216,7 +216,7 @@
         </div>
       </a>
 
-      <a href="customer-payment.html?v=2.1.4" class="menu-item" target="_blank">
+      <a href="customer-payment.html?v=2.1.5" class="menu-item" target="_blank">
         <div class="menu-row">
           <div class="menu-icon icon-payment">💰</div>
           <div class="menu-text">客户公账</div>
@@ -235,7 +235,7 @@
 
     <button class="update-btn" onclick="showUpdateModal()">🔄 更新版本</button>
 
-    <div class="footer">云端版 v2.1.4 · 更新于 2026-08-12</div>
+    <div class="footer">云端版 v2.1.5 · 更新于 2026-08-12</div>
   </div>
 
   <!-- 模态框 -->
@@ -244,9 +244,10 @@
       <div class="modal-header">版本更新</div>
       <div class="modal-body">
         <div class="update-log" id="updateLog">
-          <h3>v2.1.4 更新内容（2026-08-12）</h3>
+          <h3>v2.1.5 更新内容（2026-08-12）</h3>
           <ul>
-            <li>更新弹窗只显示最新版本内容，旧版折叠，按钮不再被顶出屏幕</li>
+            <li>修复：保存对应后第一排输入框立即清空</li>
+            <li>已存对应列表：删掉自编色号/工厂色号两列，「手动编」标签一排显示不换行</li>
           </ul>
           <div onclick="var h=document.getElementById('historyLog');h.style.display=h.style.display==='none'?'block':'none';this.querySelector('span').textContent=h.style.display==='none'?'▶ 查看历史更新':'▼ 收起历史更新';" style="font-size:12px;color:#999;cursor:pointer;user-select:none;margin-top:8px;"><span>▶ 查看历史更新</span></div>
           <div id="historyLog" style="display:none;">
