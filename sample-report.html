@@ -1587,7 +1587,7 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
 
       <!-- 自编对应关系区域 - V4布局 -->
       <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
-        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.5</span></div>
+        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.6</span></div>
         <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 | 保存按钮 -->
         <div style="display:flex;gap:4px;margin-bottom:6px;align-items:flex-end;">
           <div style="flex:0.8;">
@@ -1606,10 +1606,15 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
             <button onclick="cmSaveCustomMapping()" style="padding:5px 10px;background:#4CAF50;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;white-space:nowrap;">💾 保存对应</button>
           </div>
         </div>
+        <!-- 刚保存的对应（只显示最新一条） -->
+        <div id="cmLastSaved" style="margin-top:8px;display:none;">
+          <div style="font-size:11px;color:#999;margin-bottom:4px;">✅ 刚保存的对应：</div>
+          <div id="cmLastSavedContent" style="background:#f0f9f0;border:1px solid #c3e6cb;border-radius:4px;padding:8px 10px;font-size:12px;"></div>
+        </div>
         <!-- 已保存的对应关系列表（默认收起，点击展开） -->
         <div style="margin-top:6px;">
-          <div onclick="var l=document.getElementById('cmMappingList');l.style.display=l.style.display==='none'?'block':'none';this.querySelector('span').textContent=l.style.display==='none'?'▶ 展开已存对应':'▼ 收起已存对应';" style="font-size:11px;color:#999;cursor:pointer;user-select:none;"><span>▶ 展开已存对应</span></div>
-          <div id="cmMappingList" style="display:none;margin-top:4px;max-height:150px;overflow-y:auto;"></div>
+          <div onclick="var l=document.getElementById('cmMappingList');l.style.display=l.style.display==='none'?'block':'none';this.querySelector('span').textContent=l.style.display==='none'?'▶ 查看记录':'▼ 收起记录';" style="font-size:11px;color:#999;cursor:pointer;user-select:none;"><span>▶ 查看记录</span></div>
+          <div id="cmMappingList" style="display:none;margin-top:4px;max-height:200px;overflow-y:auto;"></div>
         </div>
       </div>
 
@@ -3345,6 +3350,13 @@ function cmSaveCustomMapping() {
   }
   cmLoadMappingList();
   showToast('✅ 对应关系已保存 [手动编]');
+  // 显示刚保存的这一条
+  var lastSavedEl = document.getElementById('cmLastSaved');
+  var lastSavedContent = document.getElementById('cmLastSavedContent');
+  if (lastSavedEl && lastSavedContent) {
+    lastSavedContent.innerHTML = '<strong>' + colorCardNo + '</strong> | ' + factoryName + ' | ' + factoryCode + ' <span style="background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;white-space:nowrap;">手动编</span>';
+    lastSavedEl.style.display = 'block';
+  }
   // 先清空第一排输入框（防止后续代码异常导致清不掉）
   document.getElementById('cmSelfColorCardNo').value = '';
   document.getElementById('cmSelfFactoryName').value = '';
@@ -3394,13 +3406,27 @@ function cmLoadMappingList() {
     return;
   }
   var html = '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
-  html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂名称</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂编号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;white-space:nowrap;">来源</th></tr>';
-  allMappings.forEach(function(m) {
+  html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂名称</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂编号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;white-space:nowrap;">来源</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">操作</th></tr>';
+  allMappings.forEach(function(m, idx) {
     var srcTag = m.source === '手动编' ? '<span style="background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;white-space:nowrap;">手动编</span>' : '<span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;font-size:10px;white-space:nowrap;">云端</span>';
-    html += '<tr><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryName || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;text-align:center;white-space:nowrap;">' + srcTag + '</td></tr>';
+    html += '<tr><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryName || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;text-align:center;white-space:nowrap;">' + srcTag + '</td><td style="padding:3px 6px;text-align:center;"><button onclick="cmEditMapping(' + idx + ')" style="padding:2px 8px;background:#1677ff;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer;">编辑</button></td></tr>';
   });
   html += '</table>';
   listEl.innerHTML = html;
+  // 存储记录供编辑使用
+  window._cmMappings = allMappings;
+}
+
+// 编辑记录：把数据填回输入框
+function cmEditMapping(idx) {
+  var m = window._cmMappings[idx];
+  if (!m) return;
+  document.getElementById('cmSelfColorCardNo').value = m.colorCardNo || '';
+  document.getElementById('cmSelfFactoryName').value = m.factoryName || '';
+  document.getElementById('cmSelfFactoryCode').value = m.factoryCode || '';
+  showToast('已填入编辑，修改后点保存对应');
+  // 滚动到顶部
+  document.getElementById('cmSelfColorCardNo').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function cmAddColorRow() {
