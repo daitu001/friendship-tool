@@ -1587,7 +1587,7 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
 
       <!-- 自编对应关系区域 - V4布局 -->
       <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
-        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.6</span></div>
+        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.7</span></div>
         <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 | 保存按钮 -->
         <div style="display:flex;gap:4px;margin-bottom:6px;align-items:flex-end;">
           <div style="flex:0.8;">
@@ -3334,6 +3334,26 @@ function cmSaveCustomMapping() {
       FriendshipSync.syncFactoryNameMap(factoryName, factoryCode);
     }
   }
+  // 自编产品也存进云端产品表，让云端搜索能搜到
+  if (typeof FriendshipSync !== 'undefined' && FriendshipSync.syncProduct) {
+    FriendshipSync.syncProduct(colorCardNo, {
+      f: factoryName,
+      fc: factoryCode,
+      s: '自编',
+      p: '',
+      updatedBy: 'tutuCollab',
+      updatedAt: new Date().toISOString()
+    });
+  }
+  // 同时写入 userProducts（getMergedDB 读取源），让本机搜索立即生效
+  try {
+    var up = JSON.parse(localStorage.getItem('userProducts') || '{}');
+    if (!up[colorCardNo]) {
+      up[colorCardNo] = [{ f: factoryName, fc: factoryCode, s: '自编', p: '' }];
+      localStorage.setItem('userProducts', JSON.stringify(up));
+      if (typeof userProducts !== 'undefined') userProducts = up;
+    }
+  } catch(e) { console.error(e); }
   // 保存到本地映射列表
   var localList = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
   localList.push({
@@ -3409,7 +3429,7 @@ function cmLoadMappingList() {
   html += '<tr style="background:#e9ecef;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">色卡编号</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂名称</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">工厂编号</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;white-space:nowrap;">来源</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">操作</th></tr>';
   allMappings.forEach(function(m, idx) {
     var srcTag = m.source === '手动编' ? '<span style="background:#fff3cd;color:#856404;padding:1px 5px;border-radius:3px;font-size:10px;white-space:nowrap;">手动编</span>' : '<span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;font-size:10px;white-space:nowrap;">云端</span>';
-    html += '<tr><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryName || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;text-align:center;white-space:nowrap;">' + srcTag + '</td><td style="padding:3px 6px;text-align:center;"><button onclick="cmEditMapping(' + idx + ')" style="padding:2px 8px;background:#1677ff;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer;">编辑</button></td></tr>';
+    html += '<tr><td style="padding:3px 6px;">' + (m.colorCardNo || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryName || '-') + '</td><td style="padding:3px 6px;">' + (m.factoryCode || '-') + '</td><td style="padding:3px 6px;text-align:center;white-space:nowrap;">' + srcTag + '</td><td style="padding:3px 6px;text-align:center;white-space:nowrap;"><button onclick="cmEditMapping(' + idx + ')" style="padding:2px 8px;background:#1677ff;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer;">编辑</button><button onclick="cmDeleteMapping(' + idx + ')" style="padding:2px 8px;background:#dc3545;color:#fff;border:none;border-radius:3px;font-size:11px;cursor:pointer;margin-left:4px;">删除</button></td></tr>';
   });
   html += '</table>';
   listEl.innerHTML = html;
@@ -3427,6 +3447,55 @@ function cmEditMapping(idx) {
   showToast('已填入编辑，修改后点保存对应');
   // 滚动到顶部
   document.getElementById('cmSelfColorCardNo').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// 删除记录：弹确认框，删了云端表格里也同步删
+function cmDeleteMapping(idx) {
+  var m = window._cmMappings[idx];
+  if (!m) return;
+  var ok = confirm('确定删除这条对应吗？\n\n色卡编号：' + (m.colorCardNo || '-') + '\n工厂名称：' + (m.factoryName || '-') + '\n工厂编号：' + (m.factoryCode || '-') + '\n\n删除后云端表格里也会同步删除');
+  if (!ok) return;
+
+  // 1. 删本地映射列表（cmCustomMappings）
+  try {
+    var localList = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
+    localList = localList.filter(function(item) {
+      return !(item.colorCardNo === m.colorCardNo && item.factoryCode === m.factoryCode);
+    });
+    localStorage.setItem('cmCustomMappings', JSON.stringify(localList));
+  } catch(e) { console.error(e); }
+
+  // 2. 删云端共享数据里的自编产品
+  try {
+    if (typeof FriendshipSync !== 'undefined') {
+      var data = FriendshipSync.getSharedData();
+      if (data.products && data.products[m.colorCardNo]) {
+        delete data.products[m.colorCardNo];
+      }
+      FriendshipSync.saveSharedData(data);
+    }
+  } catch(e) { console.error(e); }
+
+  // 3. 删 userProducts 里的自编产品（让搜索不再出现）
+  try {
+    var up = JSON.parse(localStorage.getItem('userProducts') || '{}');
+    if (up[m.colorCardNo]) {
+      delete up[m.colorCardNo];
+      localStorage.setItem('userProducts', JSON.stringify(up));
+      if (typeof userProducts !== 'undefined') userProducts = up;
+    }
+  } catch(e) { console.error(e); }
+
+  // 4. 同步上传到OSS
+  if (typeof uploadSharedDataToOSS === 'function') {
+    uploadSharedDataToOSS().catch(function(e) { console.error(e); });
+  }
+
+  // 5. 刷新记录列表 + 隐藏“刚保存的对应”
+  cmLoadMappingList();
+  var lastSavedEl = document.getElementById('cmLastSaved');
+  if (lastSavedEl) lastSavedEl.style.display = 'none';
+  showToast('🗑️ 已删除');
 }
 
 function cmAddColorRow() {
