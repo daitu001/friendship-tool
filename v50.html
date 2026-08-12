@@ -1,0 +1,4216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>土土协作 · 大货报单</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  #pwOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; align-items: center; justify-content: center; z-index: 99999; }
+  #pwOverlay.hidden { display: none; }
+  .pw-box { text-align: center; width: 280px; }
+  .pw-box h2 { color: #fff; font-size: 20px; margin-bottom: 24px; font-weight: 600; letter-spacing: 1px; }
+  .pw-box input { width: 100%; padding: 12px 16px; font-size: 16px; text-align: center; border: none; border-bottom: 2px solid #444; background: transparent; color: #fff; outline: none; letter-spacing: 4px; transition: border-color 0.2s; }
+  .pw-box input:focus { border-color: #fff; }
+  .pw-box input::placeholder { color: #666; letter-spacing: 1px; }
+  .pw-box button { margin-top: 24px; width: 100%; padding: 12px; background: #fff; color: #111; border: none; font-size: 15px; font-weight: 600; cursor: pointer; border-radius: 3px; transition: opacity 0.2s; }
+  .pw-box button:hover { opacity: 0.9; }
+  .pw-box .pw-err { color: #ff4d4f; font-size: 12px; margin-top: 10px; min-height: 18px; }
+  html, body { height: 100%; overflow: auto; -webkit-overflow-scrolling: touch; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #fafafa; color: #222; padding: 12px; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  .container { max-width: 600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; flex: 1; overflow: visible; background: #fff; border-radius: 4px; box-shadow: 0 1px 6px rgba(0,0,0,0.08); border: 1px solid #eaeaea; padding: 16px; position: relative; min-height: 0; }
+  h1 { text-align: center; font-size: 18px; color: #111; margin-bottom: 14px; font-weight: 700; flex-shrink: 0; letter-spacing: 0.5px; }
+  .top-section { flex-shrink: 0; }
+  .global-rate { background: #fafafa; border-radius: 4px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #eee; }
+  .global-rate label { font-size: 13px; font-weight: 600; color: #555; }
+  .global-rate input { width: 95px; padding: 4px 6px; border: none; border-bottom: 1.5px solid #ccc; border-radius: 0; font-size: 18px; text-align: right; outline: none; transition: border-color 0.2s; background: transparent; }
+  .global-rate input:focus { border-color: #222; }
+  .global-rate .unit { font-size: 12px; color: #999; margin-left: 4px; }
+  .history-btn { background: transparent; border: 1px solid #ddd; border-radius: 3px; padding: 5px 12px; font-size: 12px; font-weight: 500; color: #444; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .history-btn:hover { border-color: #999; background: #f5f5f5; }
+  .cloud-status { font-size: 11px; color: #52c41a; margin-left: 8px; white-space: nowrap; }
+  .cloud-status.syncing { color: #faad14; }
+  .cloud-status.error { color: #ff4d4f; }
+  .summary { background: #111; border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; color: #fff; flex-shrink: 0; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .summary-item { border-radius: 0; padding: 8px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .summary-item .label { font-size: 11px; opacity: 0.6; margin-bottom: 3px; letter-spacing: 0.5px; }
+  .summary-item .value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .actions { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; flex-shrink: 0; }
+  .btn { flex: 1; min-width: 0; padding: 10px 6px; border: none; border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 4px; letter-spacing: 0.3px; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: #111; color: #fff; }
+  .btn-primary:hover { background: #333; }
+  .btn-outline { background: #fff; color: #444; border: 1px solid #ddd; }
+  .btn-outline:hover { background: #f5f5f5; border-color: #bbb; }
+  .btn-success { background: #fff; color: #222; border: 1px solid #222; }
+  .btn-success:hover { background: #f5f5f5; }
+  .btn-warn { background: #fff; color: #444; border: 1px solid #ddd; }
+  .btn-warn:hover { background: #f5f5f5; border-color: #bbb; }
+  .table-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 90px; position: relative; scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+  .table-wrap { background: #fff; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #eee; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #f5f5f5; padding: 8px 6px; font-size: 11px; font-weight: 700; color: #666; border-bottom: 2px solid #e0e0e0; text-align: center; white-space: nowrap; position: sticky; top: 0; z-index: 10; scroll-snap-align: start; letter-spacing: 0.5px; text-transform: uppercase; }
+  tbody td { padding: 10px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  tbody tr { transition: background 0.1s; scroll-snap-align: start; }
+  tbody tr.group-separator td { border-top: 2px solid #ddd; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafafa; }
+  .td-index { color: #999; font-size: 13px; width: 40px; }
+  .td-color { width: 100px; }
+  .td-color input { width: 100%; padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 14px; text-align: center; outline: none; transition: border-color 0.15s; }
+  .td-color input:focus { border-color: #222; }
+  .td-meters { width: 85px; }
+  .td-meters input[type=number] { -moz-appearance: textfield; -webkit-appearance: none; appearance: none; }
+  .td-meters input[type=number]::-webkit-outer-spin-button, .td-meters input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .td-meters input { width: 100%; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 16px; font-weight: 700; color: #111; text-align: center; outline: none; transition: border-color 0.15s; }
+  .td-meters input:focus { border-color: #222; }
+  .td-rate { width: 110px; padding-left: 16px; }
+  .td-rate input { width: 100%; padding: 6px 12px 6px 8px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 14px; text-align: center; outline: none; transition: border-color 0.15s; }
+  .td-rate input:focus { border-color: #222; }
+  .td-kgrate { width: 80px; }
+  .td-kgrate input { width: 100%; padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 14px; text-align: center; outline: none; transition: border-color 0.15s; }
+  .td-kgrate input:focus { border-color: #222; }
+  .td-kgresult { font-weight: 700; color: #111; font-size: 15px; }
+  .td-result { font-weight: 700; color: #111; font-size: 15px; }
+  .td-delete { width: 40px; }
+  .btn-del { background: none; border: none; color: #ff4d4f; font-size: 18px; cursor: pointer; padding: 4px; border-radius: 50%; line-height: 1; transition: background 0.15s; }
+  .btn-del:hover { background: #fff5f5; }
+  .calc-process { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; padding: 12px 16px; z-index: 100; max-width: 600px; margin: 0 auto; max-height: 120px; overflow-y: auto; }
+  .calc-process .title { font-size: 12px; color: #999; margin-bottom: 6px; }
+  .calc-process .formula { font-size: 14px; color: #222; word-break: break-all; line-height: 1.5; }
+  .calc-process .formula .num { color: #111; font-weight: 700; }
+  .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px; border-radius: 0; font-size: 14px; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+  .toast.show { opacity: 1; }
+  #csvInput { display: none; }
+
+  
+
+  /* ===== 历史记录页 ===== */
+  .history-page { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fafafa; z-index: 500; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; }
+  .history-page.show { display: block; }
+  .history-inner { max-width: 600px; margin: 0 auto; }
+  .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .history-header h2 { font-size: 18px; font-weight: 700; color: #111; }
+  .history-close-btn { background: #fff; border: 1px solid #ddd; border-radius: 3px; padding: 5px 12px; font-size: 12px; cursor: pointer; color: #666; transition: all 0.15s; }
+  .history-close-btn:hover { border-color: #ff4d4f; color: #ff4d4f; background: #fff5f5; }
+  .h-sync-btn { background: #222; color: #fff; border: none; border-radius: 3px; padding: 5px 12px; font-size: 12px; cursor: pointer; margin-right: 8px; font-weight: 600; }
+  .h-sync-btn:hover { background: #333; }
+  .h-search-box { position: sticky; top: 0; z-index: 100; background: #fff; padding: 4px 0 8px 0; margin-bottom: 4px; }
+  .h-search-input { width: 100%; height: 36px; border: 1px solid #ddd; border-radius: 3px; padding: 0 36px 0 12px; font-size: 14px; color: #222; outline: none; background: #fff; }
+  .h-search-input:focus { border-color: #222; }
+  .h-search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #999; pointer-events: none; }
+  .h-filter { position: sticky; top: 48px; z-index: 99; background: #f5f5f5; border-radius: 3px; padding: 10px 14px; margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .h-filter label { font-size: 12px; color: #666; }
+  .h-filter input[type="date"] { flex: 1; height: 32px; border: 1px solid #ddd; border-radius: 3px; padding: 0 8px; font-size: 13px; outline: none; min-width: 0; }
+  .h-filter input[type="date"]:focus { border-color: #222; }
+  .h-filter-btn { height: 32px; padding: 0 12px; border: none; border-radius: 3px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .h-filter-primary { background: #222; color: #fff; }
+  .h-filter-reset { background: #eee; color: #666; }
+  .h-date-card { background: #fff; border-radius: 3px; padding: 12px 14px; margin-bottom: 6px; box-shadow: none; border: 1px solid #eee; cursor: pointer; transition: all 0.15s; display: flex; justify-content: space-between; align-items: center; }
+  .h-date-card:hover { border-color: #ccc; }
+  .h-date-text { font-size: 15px; font-weight: 600; color: #111; }
+  .h-count-text { font-size: 13px; color: #999; }
+  .h-arrow { font-size: 16px; color: #ccc; }
+  .h-back-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #111; cursor: pointer; margin-bottom: 12px; border: none; background: none; font-weight: 600; }
+  .h-back-btn:hover { text-decoration: underline; }
+  .h-page-title { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 12px; }
+  .h-cust-card { background: #fff; border-radius: 3px; margin-bottom: 6px; border: 1px solid #eee; overflow: hidden; }
+  .h-cust-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; cursor: pointer; transition: background 0.15s; }
+  .h-cust-header:hover { background: #fafafa; }
+  .h-cust-name { font-size: 14px; font-weight: 700; color: #111; }
+  .h-cust-info { font-size: 12px; color: #999; }
+  .h-cust-header .h-arrow { transition: transform 0.2s; }
+  .h-cust-header.expanded .h-arrow { transform: rotate(90deg); }
+  .h-cust-detail { display: none; padding: 0 14px 12px; border-top: 1px solid #f0f0f0; }
+  .h-cust-detail.show { display: block; }
+  .h-record { background: #fafafa; border-radius: 3px; padding: 10px 12px; margin-top: 8px; }
+  .h-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .h-record-title { font-size: 12px; font-weight: 600; color: #666; }
+  .h-record-del { font-size: 12px; color: #ff4d4f; cursor: pointer; border: none; background: none; font-weight: 500; margin-left: 14px; }
+  .h-record-del:hover { text-decoration: underline; }
+  .h-record-edit { font-size: 12px; color: #1677ff; cursor: pointer; border: none; background: none; font-weight: 500; margin-right: 8px; }
+  .h-record-edit:hover { text-decoration: underline; }
+  .h-record-btns { display: flex; align-items: center; }
+  .h-data-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; color: #555; }
+  .h-data-row .h-label { color: #888; }
+  .h-data-row .h-value { font-weight: 600; color: #111; }
+  .h-no-result { text-align: center; color: #999; font-size: 14px; padding: 40px 0; }
+  .highlight { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
+
+
+  /* ===== 移动端响应式适配 ===== */
+  /* 平板及以下屏幕 */
+  @media screen and (max-width: 768px) {
+    body { padding: 8px; }
+    .container { padding: 10px; border-width: 2px; }
+    h1 { font-size: 18px; margin-bottom: 10px; }
+
+    .global-rate { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+    .global-rate label { font-size: 14px; }
+    .global-rate input { width: 80px; font-size: 14px; padding: 8px 8px; }
+
+    .summary { padding: 12px; }
+    .summary-grid { gap: 8px; }
+    .summary-item { padding: 8px 10px; }
+    .summary-item .value { font-size: 18px; }
+    .summary-item .label { font-size: 11px; }
+
+    .actions { gap: 6px; }
+    .btn { padding: 12px 6px; font-size: 12px; min-width: 0; flex: 1 1 calc(33% - 6px); }
+
+    thead th { padding: 8px 4px; font-size: 12px; }
+    tbody td { padding: 8px 4px; font-size: 13px; }
+    .td-index { width: 30px; font-size: 12px; }
+    .td-color { width: 80px; }
+    .td-color input { font-size: 13px; padding: 8px 6px; }
+    .td-meters { width: 70px; }
+    .td-meters input { font-size: 14px; padding: 8px 6px; }
+    .td-rate { width: 85px; padding-left: 8px; }
+    .td-rate input { font-size: 13px; padding: 8px 6px 8px 6px; }
+    .td-kgrate { width: 65px; }
+    .td-kgrate input { font-size: 13px; padding: 8px 6px; }
+    .td-kgresult { font-size: 14px; }
+    .td-result { font-size: 14px; }
+    .td-delete { width: 36px; }
+    .btn-del { font-size: 20px; padding: 6px; }
+
+    .calc-process { padding: 10px 12px; max-height: 100px; }
+    .calc-process .title { font-size: 12px; }
+    .calc-process .formula { font-size: 13px; }
+    .table-scroll { padding-bottom: 80px; }
+  }
+
+  /* 小屏手机 */
+  @media screen and (max-width: 420px) {
+    body { padding: 4px; font-size: 14px; }
+    .container { padding: 8px; border-width: 2px; }
+    h1 { font-size: 16px; margin-bottom: 8px; }
+
+    .global-rate { padding: 8px 10px; margin-bottom: 8px !important; }
+    .global-rate input { width: 70px; font-size: 13px; padding: 7px 6px; }
+    .global-rate .unit { font-size: 12px; }
+    .history-btn { font-size: 11px !important; padding: 6px 8px !important; }
+
+    .summary { padding: 10px; margin-bottom: 8px; }
+    .summary-grid { gap: 6px; grid-template-columns: 1fr 1fr; }
+    .summary-item { padding: 6px 8px; }
+    .summary-item .value { font-size: 16px; }
+    .summary-item .label { font-size: 10px; }
+
+    .actions { gap: 5px; margin-bottom: 8px; }
+    .btn { padding: 11px 4px; font-size: 11px; flex: 1 1 calc(50% - 5px); border-width: 1px; }
+
+    thead th { padding: 6px 3px; font-size: 11px; white-space: nowrap; }
+    tbody td { padding: 6px 3px; font-size: 12px; }
+    .td-index { width: 24px; font-size: 11px; }
+    .td-color { width: 65px; }
+    .td-color input { font-size: 12px; padding: 7px 4px; }
+    .td-meters { width: 60px; }
+    .td-meters input { font-size: 13px; padding: 7px 4px; }
+    .td-rate { width: 70px; padding-left: 4px; }
+    .td-rate input { font-size: 12px; padding: 7px 4px; }
+    .td-kgrate { width: 55px; }
+    .td-kgrate input { font-size: 12px; padding: 7px 4px; }
+    .td-kgresult { font-size: 13px; }
+    .td-result { font-size: 13px; }
+    .td-delete { width: 30px; }
+    .btn-del { font-size: 18px; padding: 4px; }
+
+    .calc-process { padding: 8px 10px; max-height: 80px; }
+    .calc-process .title { font-size: 11px; margin-bottom: 4px; }
+    .calc-process .formula { font-size: 12px; line-height: 1.4; }
+    .table-scroll { padding-bottom: 70px; }
+
+    /* 历史记录页适配 */
+    .history-page { padding: 10px; }
+    .history-header h2 { font-size: 16px; }
+    .history-close-btn { padding: 6px 10px; font-size: 12px; }
+    .h-sync-btn { padding: 6px 10px; font-size: 12px; }
+    .h-search-input { height: 36px; font-size: 13px; }
+    .h-filter { padding: 8px 10px; gap: 6px; }
+    .h-filter label { font-size: 12px; }
+    .h-filter input[type="date"] { height: 30px; font-size: 12px; }
+    .h-filter-btn { height: 30px; padding: 0 10px; font-size: 12px; }
+    .h-date-card { padding: 10px 12px; }
+    .h-date-text { font-size: 14px; }
+    .h-count-text { font-size: 12px; }
+    .h-cust-header { padding: 10px 12px; }
+    .h-cust-name { font-size: 14px; }
+    .h-record { padding: 8px 10px; }
+    .h-data-row { font-size: 12px; }
+  }
+
+  /* 超小屏手机 (iPhone SE 等) */
+  @media screen and (max-width: 360px) {
+    .container { padding: 6px; }
+    h1 { font-size: 15px; }
+    .global-rate input { width: 60px; font-size: 12px; }
+    .btn { font-size: 10px; padding: 10px 3px; }
+    thead th { font-size: 10px; padding: 5px 2px; }
+    tbody td { font-size: 11px; padding: 5px 2px; }
+    .td-color { width: 58px; }
+    .td-meters { width: 55px; }
+    .td-rate { width: 62px; }
+    .td-kgrate { width: 50px; }
+  }
+
+  /* 横屏适配 */
+  @media screen and (max-height: 500px) and (orientation: landscape) {
+    .container { padding: 8px; }
+    h1 { font-size: 16px; margin-bottom: 6px; }
+    .summary { padding: 8px; margin-bottom: 6px; }
+    .summary-item .value { font-size: 16px; }
+    .calc-process { max-height: 60px; padding: 6px 10px; }
+    .table-scroll { padding-bottom: 50px; }
+  }
+
+  /* 触屏设备优化 */
+  @media (hover: none) and (pointer: coarse) {
+    .btn { min-height: 44px; }
+    .history-btn { min-height: 40px; }
+    .btn-del { min-width: 44px; min-height: 44px; }
+    input, button, select { font-size: 16px !important; }
+    .btn { font-size: 12px !important; }
+    .history-btn { font-size: 12px !important; }
+    thead th { font-size: 12px !important; }
+    tbody td { font-size: 13px !important; }
+    .td-color input, .td-meters input, .td-rate input, .td-kgrate input { font-size: 15px !important; }
+  }
+
+
+/* ===== 管理员面板样式 ===== */
+.admin-entry-btn { position: absolute; top: 50%; right: -4px; transform: translateY(-50%); background: transparent; border: 1px solid #ddd; border-radius: 3px; padding: 2px 8px; font-size: 10px; color: #aaa; cursor: pointer; transition: all 0.15s; }
+.admin-entry-btn:hover { border-color: #999; color: #555; background: #f5f5f5; }
+.admin-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); z-index: 1000; justify-content: center; align-items: center; }
+.admin-overlay.active { display: flex; }
+.admin-panel { background: #fff; border-radius: 4px; width: 90%; max-width: 380px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); overflow: hidden; }
+.admin-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #eee; }
+.admin-panel-header h3 { font-size: 15px; font-weight: 700; color: #222; margin: 0; }
+.admin-panel-close { background: transparent; border: none; font-size: 20px; color: #999; cursor: pointer; padding: 0 4px; line-height: 1; }
+.admin-panel-close:hover { color: #333; }
+.admin-panel-body { padding: 16px; }
+.admin-pwd-group { margin-bottom: 14px; }
+.admin-pwd-group label { display: block; font-size: 12px; color: #666; margin-bottom: 6px; font-weight: 600; }
+.admin-pwd-group input { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 3px; font-size: 14px; outline: none; transition: border-color 0.15s; }
+.admin-pwd-group input:focus { border-color: #222; }
+.admin-login-btn { width: 100%; padding: 9px; background: #111; color: #fff; border: none; border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.admin-login-btn:hover { background: #333; }
+.admin-login-btn:active { transform: scale(0.98); }
+.admin-update-section { display: none; }
+.admin-update-section.active { display: block; }
+.admin-file-group { margin-bottom: 12px; }
+.admin-file-group label { display: block; font-size: 12px; color: #666; margin-bottom: 6px; font-weight: 600; }
+.admin-file-input { width: 100%; padding: 10px 8px; border: 1px dashed #ccc; border-radius: 3px; font-size: 12px; color: #666; background: #fafafa; cursor: pointer; }
+.admin-upload-btn { width: 100%; padding: 9px; background: #111; color: #fff; border: none; border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.admin-upload-btn:hover { background: #333; }
+.admin-upload-btn:active { transform: scale(0.98); }
+.admin-upload-btn:disabled { background: #ccc; cursor: not-allowed; }
+.admin-status { margin-top: 12px; padding: 8px 10px; border-radius: 3px; font-size: 12px; line-height: 1.6; display: none; word-break: break-all; white-space: pre-line; }
+.admin-status.show { display: block; }
+.admin-status.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+.admin-status.error { background: #fff2f0; color: #cf1322; border: 1px solid #ffa39e; }
+.admin-status.info { background: #f0f5ff; color: #1d39c4; border: 1px solid #adc6ff; }
+
+/* 日系温暖文具风 - 工厂表格区域 */
+#fFactoryRows input:focus {
+  border-color: #d4a76a !important;
+  box-shadow: 0 0 0 2px rgba(212,167,106,0.15) !important;
+}
+#fFactoryRows button:hover {
+  color: #ff4d4f !important;
+}
+#fFactoryRows input::-webkit-input-placeholder {
+  color: #c8bfb2;
+}
+
+
+/* ===== 电脑端APP风格居中布局 v88 ===== */
+@media (min-width: 520px) {
+  body {
+    background: #e0ddd8 !important;
+    padding: 24px !important;
+    align-items: center !important;
+  }
+  .container {
+    max-width: 600px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06) !important;
+    border: none !important;
+    min-height: calc(100vh - 48px) !important;
+  }
+  #pwOverlay {
+    background: rgba(0,0,0,0.85) !important;
+  }
+}
+  .td-rate { width: 100px !important; }
+  .td-rate input { padding: 4px 6px !important; }
+</style>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="友谊织物">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="https://cdn.jsdelivr.net/npm/ali-oss@6.21.0/dist/aliyun-oss-sdk.min.js">
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"><\/script>
+<script>
+// 友谊工具数据同步模块
+// 用于样布工具和大货工具之间的数据共享
+
+const FriendshipSync = {
+  STORAGE_KEY: 'friendshipTool_sharedData',
+  
+  // 获取共享数据
+  getSharedData: function() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {
+        products: {},      // 产品编号 -> 产品信息
+        colors: {},        // 色号 -> 色号信息
+        factories: {},     // 工厂编号 -> 工厂信息
+        lastUpdated: null
+      };
+    } catch(e) {
+      console.error('读取共享数据失败:', e);
+      return { products: {}, colors: {}, factories: {}, lastUpdated: null };
+    }
+  },
+  
+  // 保存共享数据
+  saveSharedData: function(data) {
+    try {
+      data.lastUpdated = new Date().toISOString();
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      // 触发自定义事件通知其他标签页
+      window.dispatchEvent(new CustomEvent('friendshipDataChanged', { detail: data }));
+      return true;
+    } catch(e) {
+      console.error('保存共享数据失败:', e);
+      return false;
+    }
+  },
+  
+  // 同步产品数据
+  syncProduct: function(productCode, productInfo) {
+    const data = this.getSharedData();
+    data.products[productCode] = productInfo;
+    return this.saveSharedData(data);
+  },
+  
+  // 同步色号数据
+  syncColor: function(colorCode, colorInfo) {
+    const data = this.getSharedData();
+    data.colors[colorCode] = colorInfo;
+    return this.saveSharedData(data);
+  },
+  
+  // 同步工厂数据
+  syncFactory: function(factoryCode, factoryInfo) {
+    const data = this.getSharedData();
+    data.factories[factoryCode] = factoryInfo;
+    return this.saveSharedData(data);
+  },
+  
+  // 批量同步
+  syncBatch: function(products, colors, factories) {
+    const data = this.getSharedData();
+    if (products) Object.assign(data.products, products);
+    if (colors) Object.assign(data.colors, colors);
+    if (factories) Object.assign(data.factories, factories);
+    return this.saveSharedData(data);
+  },
+  
+  // 监听数据变化
+  onDataChange: function(callback) {
+    // 监听storage事件（跨标签页）
+    window.addEventListener('storage', (e) => {
+      if (e.key === this.STORAGE_KEY) {
+        try {
+          const newData = JSON.parse(e.newValue);
+          callback(newData);
+        } catch(err) {
+          console.error('解析变化数据失败:', err);
+        }
+      }
+    });
+    
+    // 监听自定义事件（同标签页）
+    window.addEventListener('friendshipDataChanged', (e) => {
+      callback(e.detail);
+    });
+  }
+};
+
+// 导出到全局
+if (typeof window !== 'undefined') {
+  window.FriendshipSync = FriendshipSync;
+}
+
+
+// === 大货工具同步逻辑 ===
+(function() {
+  // 页面加载后，从共享数据获取产品/色号/工厂信息
+  function loadSharedDataIntoV50() {
+    var shared = FriendshipSync.getSharedData();
+    if (!shared || !shared.lastUpdated) return;
+    
+    // 从共享数据中获取工厂色号映射，自动填充
+    // 此处主要记录共享数据，供后续使用
+    window._friendshipSharedData = shared;
+    console.log('[FriendshipSync] 大货工具已加载共享数据:', 
+      Object.keys(shared.products || {}).length, '个产品,',
+      Object.keys(shared.colors || {}).length, '个色号,',
+      Object.keys(shared.factories || {}).length, '个工厂');
+  }
+  
+  // 注册跨标签页监听
+  FriendshipSync.onDataChange(function(newData) {
+    console.log('[FriendshipSync] 检测到共享数据变化，更新大货工具...');
+    window._friendshipSharedData = newData;
+  });
+  
+  // 页面加载时执行：先从OSS下载最新数据，再合并
+  async function initWithCloudData() {
+    try {
+      await downloadSharedDataFromOSS();
+    } catch(e) {
+      console.warn('[SharedSync] 初始云端下载失败:', e);
+    }
+    loadSharedDataIntoV50();
+    
+    // 启动定时同步（每30秒）
+    setInterval(async function() {
+      try {
+        var data = await downloadSharedDataFromOSS();
+        if (data) {
+          console.log('[SharedSync] 定时同步成功');
+          if (typeof refreshAfterSync === 'function') refreshAfterSync();
+        }
+      } catch(e) {
+        console.warn('[SharedSync] 定时同步失败:', e);
+      }
+    }, 30000);
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWithCloudData);
+  } else {
+    initWithCloudData();
+  }
+})();
+
+// 同步后刷新页面数据
+function refreshAfterSync() {
+  // 重新加载共享数据
+  if (typeof FriendshipSync !== 'undefined') {
+    var shared = FriendshipSync.getSharedData();
+    if (shared) {
+      window._friendshipSharedData = shared;
+      console.log('[SharedSync] 大货工具刷新数据:', 
+        Object.keys(shared.products || {}).length, '个产品,',
+        Object.keys(shared.colors || {}).length, '个色号,',
+        Object.keys(shared.factories || {}).length, '个工厂');
+    }
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/ali-oss@6.21.0/dist/aliyun-oss-sdk.min.js"></script>
+<script>
+// ===== 云端共享数据同步模块 =====
+const SHARED_DATA_OSS_KEY = 'friendship-tool/shared-data.json';
+const OSS_CONFIG_SHARED = {
+  region: 'oss-cn-guangzhou',
+  bucket: 'youyi-01mishu',
+  accessKeyId: '',
+  accessKeySecret: '',
+  endpoint: 'oss-cn-guangzhou.aliyuncs.com'
+};
+let sharedOssClient = null;
+
+function initSharedOSS() {
+  if (typeof OSS === 'undefined') {
+    console.log('[SharedSync] OSS SDK 未加载');
+    return;
+  }
+  try {
+    sharedOssClient = new OSS({
+      region: OSS_CONFIG_SHARED.region,
+      accessKeyId: OSS_CONFIG_SHARED.accessKeyId,
+      accessKeySecret: OSS_CONFIG_SHARED.accessKeySecret,
+      bucket: OSS_CONFIG_SHARED.bucket,
+      endpoint: OSS_CONFIG_SHARED.endpoint,
+      secure: false
+    });
+    console.log('[SharedSync] OSS客户端初始化成功');
+  } catch(e) {
+    console.error('[SharedSync] OSS初始化失败:', e);
+  }
+}
+
+// 设置同步状态UI
+function setSyncStatus(status, msg) {
+  var el = document.getElementById('sharedSyncStatus');
+  if (!el) return;
+  if (status === 'syncing') {
+    el.innerHTML = '<span style="color:#faad14">⏳ 同步中...</span>';
+  } else if (status === 'success') {
+    var now = new Date();
+    var ts = (now.getHours()<10?'0':'')+now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
+    el.innerHTML = '<span style="color:#52c41a">✓ 已同步 ' + ts + '</span>';
+  } else if (status === 'error') {
+    el.innerHTML = '<span style="color:#ff4d4f">✗ 同步失败</span>';
+  } else {
+    el.innerHTML = '<span style="color:#999">' + (msg || '☁ 未同步') + '</span>';
+  }
+}
+
+// 上传共享数据到OSS
+async function uploadSharedDataToOSS() {
+  if (!sharedOssClient) initSharedOSS();
+  if (!sharedOssClient) {
+    console.warn('[SharedSync] OSS不可用，跳过上传');
+    setSyncStatus('error');
+    return false;
+  }
+  try {
+    setSyncStatus('syncing');
+    var data;
+    if (typeof FriendshipSync !== 'undefined') {
+      data = FriendshipSync.getSharedData();
+    } else {
+      var raw = localStorage.getItem('friendshipTool_sharedData');
+      data = raw ? JSON.parse(raw) : { products: {}, colors: {}, factories: {}, lastUpdated: null };
+    }
+    data.lastSyncTime = new Date().toISOString();
+    var blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    await sharedOssClient.put(SHARED_DATA_OSS_KEY, blob);
+    console.log('[SharedSync] 上传成功');
+    setSyncStatus('success');
+    return true;
+  } catch(e) {
+    console.error('[SharedSync] 上传失败:', e);
+    setSyncStatus('error');
+    return false;
+  }
+}
+
+// 从OSS下载共享数据
+async function downloadSharedDataFromOSS() {
+  if (!sharedOssClient) initSharedOSS();
+  if (!sharedOssClient) {
+    console.warn('[SharedSync] OSS不可用，跳过下载');
+    setSyncStatus('error');
+    return null;
+  }
+  try {
+    setSyncStatus('syncing');
+    var result = await sharedOssClient.get(SHARED_DATA_OSS_KEY);
+    var cloudData = JSON.parse(result.content.toString());
+    console.log('[SharedSync] 下载成功:', cloudData);
+    
+    // 合并到本地localStorage
+    mergeSharedDataFromCloud(cloudData);
+    
+    setSyncStatus('success');
+    return cloudData;
+  } catch(e) {
+    if (e.status === 404 || e.code === 'NoSuchKey') {
+      console.log('[SharedSync] 云端暂无共享数据文件');
+      setSyncStatus('success');
+    } else {
+      console.error('[SharedSync] 下载失败:', e);
+      setSyncStatus('error');
+    }
+    return null;
+  }
+}
+
+// 合并云端数据到本地（以lastUpdated时间戳为准）
+function mergeSharedDataFromCloud(cloudData) {
+  if (!cloudData) return;
+  var localData;
+  if (typeof FriendshipSync !== 'undefined') {
+    localData = FriendshipSync.getSharedData();
+  } else {
+    var raw = localStorage.getItem('friendshipTool_sharedData');
+    localData = raw ? JSON.parse(raw) : { products: {}, colors: {}, factories: {}, lastUpdated: null };
+  }
+  
+  // 合并产品：以updatedAt时间戳为准
+  if (cloudData.products) {
+    Object.keys(cloudData.products).forEach(function(code) {
+      var cloudItem = cloudData.products[code];
+      var localItem = localData.products ? localData.products[code] : null;
+      if (!localItem || (cloudItem.updatedAt && localItem.updatedAt && cloudItem.updatedAt >= localItem.updatedAt) || !localItem.updatedAt) {
+        if (!localData.products) localData.products = {};
+        localData.products[code] = cloudItem;
+      }
+    });
+  }
+  
+  // 合并色号
+  if (cloudData.colors) {
+    Object.keys(cloudData.colors).forEach(function(code) {
+      var cloudItem = cloudData.colors[code];
+      var localItem = localData.colors ? localData.colors[code] : null;
+      if (!localItem || (cloudItem.updatedAt && localItem.updatedAt && cloudItem.updatedAt >= localItem.updatedAt) || !localItem.updatedAt) {
+        if (!localData.colors) localData.colors = {};
+        localData.colors[code] = cloudItem;
+      }
+    });
+  }
+  
+  // 合并工厂
+  if (cloudData.factories) {
+    Object.keys(cloudData.factories).forEach(function(code) {
+      var cloudItem = cloudData.factories[code];
+      var localItem = localData.factories ? localData.factories[code] : null;
+      if (!localItem || (cloudItem.updatedAt && localItem.updatedAt && cloudItem.updatedAt >= localItem.updatedAt) || !localItem.updatedAt) {
+        if (!localData.factories) localData.factories = {};
+        localData.factories[code] = cloudItem;
+      }
+    });
+  }
+  
+  localData.lastUpdated = new Date().toISOString();
+  localStorage.setItem('friendshipTool_sharedData', JSON.stringify(localData));
+  
+  if (typeof FriendshipSync !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('friendshipDataChanged', { detail: localData }));
+  }
+  
+  console.log('[SharedSync] 数据合并完成');
+}
+
+// 手动同步按钮
+async function manualSyncSharedData() {
+  var result = await downloadSharedDataFromOSS();
+  if (result) {
+    showToast('✓ 已同步最新数据');
+    // 刷新页面数据
+    if (typeof refreshAfterSync === 'function') {
+      refreshAfterSync();
+    }
+  } else {
+    showToast('⚠ 同步失败，请检查网络');
+  }
+}
+</script>
+<script>
+function goHome() {
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    window.location.href = '/';
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- 密码锁屏 -->
+<div id="pwOverlay">
+  <div class="pw-box">
+    <h2>大货报单工具</h2>
+    <input type="password" id="pwInput" placeholder="请输入密码" autocomplete="off">
+    <button onclick="checkPw()">进入</button>
+    <div class="pw-err" id="pwErr"></div>
+  </div>
+</div>
+
+<script>
+function checkPw(){
+  var pw=document.getElementById('pwInput').value;
+  if(pw==='youyi3398313'){
+    document.getElementById('pwOverlay').classList.add('hidden');
+    try{localStorage.setItem('youyi_pw_ok','1');}catch(e){}
+  }else{
+    document.getElementById('pwErr').textContent='密码错误，请重试';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+  }
+}
+document.getElementById('pwInput').addEventListener('keydown',function(e){if(e.key==='Enter')checkPw();});
+window.addEventListener('load',function(){
+  try{if(localStorage.getItem('youyi_pw_ok')==='1')document.getElementById('pwOverlay').classList.add('hidden');}catch(e){}
+});
+
+</script>
+
+
+
+
+<!-- ===== 主工具页 ===== -->
+<div class="container" id="mainPage">
+  <h1 style="position:relative;"><button onclick="goHome()" style="position:absolute;left:-4px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;color:#667eea;cursor:pointer;padding:4px 6px;">←</button><span style="margin-left:32px;">土土协作 · 大货报单</span></h1>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+    <button onclick="manualSyncSharedData()" style="background:#222;color:#fff;border:none;border-radius:3px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;">🔄 云端同步</button>
+    <span id="sharedSyncStatus" style="font-size:11px;color:#999;">☁ 未同步</span>
+  </div>
+
+  <div class="top-section">
+    <div class="global-rate" style="margin-bottom:12px;">
+      <label id="rateLabel">米数转换率</label>
+      <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:nowrap;overflow-x:auto;">
+        <div style="display:flex;flex-direction:column;align-items:center;min-width:55px;">
+          <input type="number" id="globalRate" value="0.965" step="0.1" min="-9999" max="200" data-meter-val="0.965" data-kg-val="2" data-yard-val="0" onchange="saveRateVal();syncAllRowRates(this.value)" style="width:55px;padding:4px 6px;border:none;border-bottom:1.5px solid #999;border-radius:3px;font-size:15px;text-align:center;outline:none;background:transparent;">
+          <span class="unit" id="rateUnit" style="font-size:10px;color:#999;line-height:1;margin-top:2px;white-space:nowrap;">%</span>
+        </div>
+        <button class="history-btn" id="switchRateBtn" onclick="switchRateMode()" style="font-size:12px;padding:4px 10px;color:#222;font-weight:700;">切换公斤</button>
+        <button class="history-btn" onclick="openFactory()">工厂报米数</button>
+        <button class="history-btn" onclick="openHistory()"> 历史记录</button>
+        <span class="cloud-status" id="cloudStatus">☁ 云端</span>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="summary-grid">
+        <div class="summary-item"><div class="label">条数</div><div class="value" id="sumCount">0</div></div>
+        <div class="summary-item"><div class="label">差额合计</div><div class="value" id="sumDiff">0</div></div>
+        <div class="summary-item"><div class="label" id="sumOrigLabel">原数量合计</div><div class="value" id="sumOrig">0</div></div>
+        <div class="summary-item"><div class="label">换算后合计</div><div class="value" id="sumConv">0</div></div>
+      </div>
+    </div>
+    <div class="global-rate" style="margin-bottom: 8px;">
+      <div style="display: flex; gap: 12px; flex: 1;">
+        <div style="flex: 1;">
+          <label style="font-size: 11px; color: #999; margin-bottom: 3px; display: block; font-weight: 600;">客户名称</label>
+          <input type="text" id="globalCustomer" placeholder="输入客户名称" style="width: 100%; padding: 7px 10px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 14px; outline: none;">
+        </div>
+        <div style="flex: 1;">
+          <label style="font-size: 11px; color: #999; margin-bottom: 3px; display: block; font-weight: 600;">色卡编号</label>
+          <input type="text" id="globalColorCode" placeholder="输入色卡编号" style="width: 100%; padding: 7px 10px; border: 1px solid #e0e0e0; border-radius: 3px; font-size: 14px; outline: none;">
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="addRow()">＋ 新增行</button>
+      <button class="btn btn-outline" onclick="document.getElementById('csvInput').click()">📂 导入</button>
+      <button class="btn btn-success" onclick="copyConverted()">📋 复制米数</button>
+      <button class="btn btn-warn" onclick="copyFormula()">📝 复制过程</button>
+      <button class="btn btn-primary" onclick="saveData()">💾 保存</button>
+      <button class="btn btn-outline" onclick="clearData()">🗑 清空</button>
+    </div>
+    <input type="file" id="csvInput" accept=".csv,.txt" onchange="importCSV(event)">
+  </div>
+  <div class="table-scroll">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>序号</th><th>自编色号</th><th>工厂色号</th><th id="thOrig">原数量</th><th>转换率</th><th>换算数量</th><th>删除</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="calc-process">
+    <div class="title">转换过程</div>
+    <div class="formula" id="formulaDisplay">-</div>
+  </div>
+</div>
+
+<!-- ===== 工厂报米数页 ===== -->
+<div class="history-page" id="factoryPage" style="display:none;">
+  <div class="history-inner">
+    <div class="history-header">
+      <h2>🏭 工厂报米数</h2>
+      <div>
+        <button class="history-close-btn" onclick="closeFactory()">✕ 关闭</button>
+      </div>
+    </div>
+    <!-- 产品搜索 -->
+    <div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:3px;padding:10px;margin-bottom:12px;position:sticky;top:0;z-index:100;">
+      <div style="font-size:11px;font-weight:700;color:#d48806;margin-bottom:6px;">🔍 产品搜索</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="text" id="productSearchInput" placeholder="输入编号搜索（如 0201、U2287）" style="flex:1;padding:8px 10px;border:1px solid #e0c060;border-radius:3px;font-size:14px;outline:none;box-sizing:border-box;" oninput="onProductSearch()" autocomplete="off">
+        <button onclick="convertProduct()" style="padding:8px 12px;background:#d48806;color:#fff;border:1px solid #d48806;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">转换</button>
+        <button onclick="clearProductSearch()" style="padding:8px 12px;background:#fff;color:#d48806;border:1px solid #d48806;border-radius:3px;font-size:12px;cursor:pointer;white-space:nowrap;">清空</button>
+      </div>
+      <div id="productSearchResults" style="display:none;max-height:200px;overflow-y:auto;margin-top:8px;border:1px solid #f0d070;background:#fff;border-radius:3px;"></div>
+    </div>
+    <!-- 新建表单 -->
+    <div id="fFactoryForm" style="background:#F5FBF5;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;margin-bottom:8px;">
+      <div style="font-size:11px;color:#999;margin-bottom:3px;">📅 日期：<span id="fFactoryDate" style="font-weight:700;color:#111;"></span></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <label style="font-size:12px;color:#666;white-space:nowrap;">客户名称：</label>
+            <input type="text" id="fCustomerName" placeholder="填写客户名称" style="width:120px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;">
+          </div>
+          <div id="productCodeDisplay" style="display:none;align-items:center;gap:4px;">
+            <span style="color:#666;white-space:nowrap;font-size:12px;">色卡编号：</span>
+            <input type="text" id="fColorCard" style="width:120px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <label style="font-size:12px;color:#666;white-space:nowrap;">工厂名称：</label>
+            <div style="width:120px;position:relative;">
+              <input type="text" id="fFactoryName" placeholder="输入联想" style="width:100%;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;" oninput="onFactoryNameInput()" autocomplete="off">
+              <div id="fFactoryNameList" style="display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid #e0e0e0;border-top:none;max-height:120px;overflow-y:auto;z-index:100;font-size:12px;"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <label style="font-size:12px;color:#666;white-space:nowrap;">工厂编号：</label>
+            <input type="text" id="fFactoryNo" placeholder="6666#" style="width:120px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;">
+          </div>
+        </div>
+      </div>
+      <!-- 单位选择 -->
+      <div style="margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+        <label style="font-size:12px;color:#666;white-space:nowrap;">单位：</label>
+        <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="radio" name="fUnit" value="米" checked onchange="onFactoryUnitChange()"> <span style="font-weight:600;">米</span></label>
+        <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="radio" name="fUnit" value="KG" onchange="onFactoryUnitChange()"> <span style="font-weight:600;">KG</span></label>
+        <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="radio" name="fUnit" value="码" onchange="onFactoryUnitChange()"> <span style="font-weight:600;">码</span></label>
+        <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:3px;"><input type="radio" name="fUnit" value="条" onchange="onFactoryUnitChange()"> <span style="font-weight:600;">条</span></label>
+      </div>
+      <!-- 操作按钮行 -->
+      <div style="margin-bottom:8px;display:flex;gap:6px;">
+        <button onclick="addFactoryRow()" style="padding:6px 12px;background:#EAF5EA;color:#52c41a;border:1px solid #52c41a;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">+ 添加</button>
+        <button onclick="copyFactoryForm()" style="padding:6px 12px;background:#fff;color:#1677ff;border:1px solid #1677ff;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">复制工厂</button>
+        <button onclick="openCopyModifyModal()" style="padding:6px 12px;background:#fff;color:#fa8c16;border:1px solid #fa8c16;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">复制改数</button>
+      </div>
+      <!-- 表头 -->
+      <div style="display:flex;padding:6px 0 8px;border-bottom:1.5px solid #e0c8a0;font-size:11px;color:#999;font-weight:600;letter-spacing:1px;gap:10px;align-items:center;">
+        <div style="width:72px;text-align:center;color:#b8865c;font-weight:700;font-size:13px;letter-spacing:2px;">自编色号</div>
+        <div style="flex:1;text-align:center;color:#888;font-size:11px;letter-spacing:1.5px;">数量</div>
+        <div style="flex:1;text-align:center;color:#888;font-size:11px;letter-spacing:1.5px;">厂编色号</div>
+        <div style="flex:1;text-align:center;color:#888;font-size:11px;letter-spacing:1.5px;">要求</div>
+        <div style="width:24px;"></div>
+      </div>
+      <div id="fFactoryRows"></div>
+      <div style="margin-top:8px;">
+        <button onclick="saveFactoryReport()" style="width:100%;padding:8px 12px;background:#1677ff;color:#fff;border:none;border-radius:3px;font-size:13px;font-weight:600;cursor:pointer;">保存</button>
+      </div>
+    </div>
+    <!-- 复制改数弹出窗口 -->
+<div id="copyModifyModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;">
+  <div style="background:#fff;margin:40px 20px;border-radius:3px;overflow:hidden;">
+    <div style="padding:12px 16px;background:#fafafa;border-bottom:1px solid #eee;font-size:14px;font-weight:600;color:#333;">复制改数</div>
+    <div style="padding:16px;">
+      <input type="text" id="cmCustomerName" readonly style="width:100%;padding:8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;box-sizing:border-box;outline:none;background:#f5f5f5;color:#666;">
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;color:#666;">色卡编号：</label>
+        <input type="text" id="cmColorCardNo" placeholder="工厂色卡编号" style="width:100%;padding:8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;box-sizing:border-box;margin-top:4px;outline:none;">
+      </div>
+      <div style="display:flex;padding:8px 8px 6px;border-bottom:1.5px solid #e0e0e0;font-size:11px;color:#999;font-weight:600;letter-spacing:1px;gap:8px;align-items:center;">
+        <div style="width:80px;text-align:center;color:#b8865c;font-weight:700;font-size:12px;letter-spacing:2px;">自编色号</div>
+        <div style="width:80px;text-align:center;color:#888;font-size:11px;letter-spacing:1.5px;">厂编色号</div>
+        <div style="width:70px;text-align:center;color:#888;font-size:11px;letter-spacing:1.5px;">条数</div>
+      </div>
+      <div id="cmColorRows" style="max-height:250px;overflow-y:auto;border:1px solid #eee;border-radius:3px;"></div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeCopyModifyModal()" style="padding:8px 20px;background:#fff;color:#666;border:1px solid #ddd;border-radius:3px;font-size:13px;cursor:pointer;">取消</button>
+      <button onclick="doOrderProcess()" style="padding:8px 20px;background:#fa8c16;color:#fff;border:none;border-radius:3px;font-size:13px;font-weight:600;cursor:pointer;">导入开单处理</button>
+    </div>
+  </div>
+</div>
+
+<!-- 开单结果区域 -->
+<div id="orderResultArea" style="display:none;background:#fff8e6;border:1px solid #ffd591;border-radius:3px;padding:12px;margin-bottom:12px;">
+  <div style="font-size:13px;font-weight:600;color:#d46b08;margin-bottom:8px;"> 开单处理</div>
+  <div style="font-size:12px;color:#666;margin-bottom:8px;">客户：<strong id="orderCustomer"></strong> &nbsp;|&nbsp; 色卡编号：<strong id="orderColorCard"></strong></div>
+  <div id="orderColorList"></div>
+  <div style="margin-top:12px;display:flex;gap:8px;">
+    <button onclick="copyOrderResult()" style="padding:6px 14px;background:#fff;color:#fa8c16;border:1px solid #fa8c16;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">复制开单</button>
+    <button onclick="closeOrderResult()" style="padding:6px 14px;background:#fff;color:#666;border:1px solid #ddd;border-radius:3px;font-size:12px;cursor:pointer;">关闭</button>
+  </div>
+</div>
+
+    <!-- 历史记录 -->
+    <div style="font-size:14px;font-weight:700;color:#111;margin-bottom:8px;"> 历史报数</div>
+    <div style="margin-bottom:8px;display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="text" id="fhSearchInput" placeholder="搜索客户/工厂/色号..." oninput="applyFactoryHistoryFilter()" style="flex:1;padding:5px 8px;border:1.5px solid #d9d9d9;border-radius:3px;font-size:12px;outline:none;box-sizing:border-box;">
+        <button onclick="resetFactoryHistoryFilter()" style="padding:4px 8px;background:#fff;color:#666;border:1px solid #d9d9d9;border-radius:3px;font-size:11px;cursor:pointer;white-space:nowrap;">重置</button>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:11px;color:#666;">从</span>
+        <input type="date" id="fhDateFrom" onchange="applyFactoryHistoryFilter()" style="flex:1;min-width:0;padding:3px 4px;border:1.5px solid #d9d9d9;border-radius:3px;font-size:11px;outline:none;box-sizing:border-box;">
+        <span style="font-size:11px;color:#666;">到</span>
+        <input type="date" id="fhDateTo" onchange="applyFactoryHistoryFilter()" style="flex:1;min-width:0;padding:3px 4px;border:1.5px solid #d9d9d9;border-radius:3px;font-size:11px;outline:none;box-sizing:border-box;">
+      </div>
+    </div>
+    <div id="fFactoryHistory"></div>
+  </div>
+</div>
+
+<!-- ===== 历史记录页 ===== -->
+<div class="history-page" id="historyPage">
+  <div class="history-inner">
+    <div class="history-header">
+      <h2>📋 历史记录</h2>
+      <div>
+        <button class="h-sync-btn" onclick="syncFromCloud()">🔄 云端同步</button>
+        <button class="history-close-btn" onclick="closeHistory()">✕ 关闭</button>
+      </div>
+    </div>
+    <div class="h-search-box">
+      <input class="h-search-input" type="text" id="hSearchInput" placeholder="搜索客户名、色号、下单编号..." oninput="onHistorySearch()">
+      <span class="h-search-icon" style="font-size:14px;"🔍</span>
+    </div>
+    <div class="h-filter">
+      <label>从</label><input type="date" id="hDateFrom">
+      <label>到</label><input type="date" id="hDateTo">
+      <button class="h-filter-btn h-filter-primary" onclick="applyHistoryFilter()">筛选</button>
+        <button class="h-filter-btn" id="hFilterUndelivered" style="background:#222;color:#fff;border:1px solid #222;" onclick="toggleHistoryUndelivered()">📦 未配送</button>
+        <button class="h-filter-btn" id="hFilterDelivered" style="background:#222;color:#fff;border:1px solid #222;" onclick="toggleHistoryDelivered()">✅ 已配送</button>
+      <button class="h-filter-btn h-filter-reset" onclick="resetHistoryFilter()">重置</button>
+    </div>
+    <div id="hPage1"><div id="hDateList"></div><div class="h-no-result" id="hNoResult1" style="display:none;">没有匹配的记录</div></div>
+    <div id="hPage2" style="display:none;">
+      <button class="h-back-btn" onclick="hGoBack()">‹ 返回</button>
+      <div class="h-page-title" id="hPageTitle"></div>
+      <div id="hCustomerList"></div>
+    </div>
+    <div id="hPage3" style="display:none;">
+      <button class="h-back-btn" onclick="hGoBackFromSearch()">‹ 返回</button>
+      <div class="h-page-title" id="hSearchTitle"></div>
+      <div id="hSearchResults"></div>
+      <div class="h-no-result" id="hNoResult3" style="display:none;">没有匹配的记录</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 管理员面板 -->
+<div class="admin-overlay" id="adminOverlay">
+  <div class="admin-panel">
+    <div class="admin-panel-header">
+      <h3>管理面板</h3>
+      <button class="admin-panel-close" onclick="closeAdminPanel()">&times;</button>
+    </div>
+    <div class="admin-panel-body">
+      <div id="adminLoginSection">
+        <div class="admin-pwd-group">
+          <label>请输入管理密码</label>
+          <input type="password" id="adminPwdInput" placeholder="管理密码" onkeydown="if(event.key==='Enter')adminLogin()">
+        </div>
+        <button class="admin-login-btn" onclick="adminLogin()">验证</button>
+        <div class="admin-status" id="adminLoginStatus"></div>
+      </div>
+      <div class="admin-update-section" id="adminUpdateSection">
+        <div class="admin-file-group">
+          <label>选择产品数据文件（xlsx）</label>
+          <input type="file" class="admin-file-input" id="adminFileInput" accept=".xlsx,.xls">
+        </div>
+        <button class="admin-upload-btn" id="adminUploadBtn" onclick="adminUploadProductData()" disabled>上传并更新</button>
+        <div class="admin-status" id="adminUploadStatus"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+
+
+
+// ===== 阿里云 OSS 配置 =====
+// ===== 工具版本号 =====
+const TOOLS_VERSION = 130;
+
+
+
+// ===== 阿里云 OSS 配置 =====
+const OSS_CONFIG = {
+  region: 'oss-cn-guangzhou',
+  bucket: 'youyi-01mishu',
+  accessKeyId: '',
+  accessKeySecret: '',
+  endpoint: 'oss-cn-guangzhou.aliyuncs.com'
+};
+
+let ossClient = null;
+let cloudSynced = false;
+
+function initOSS() {
+  if (typeof OSS === 'undefined') {
+    console.log('OSS SDK 未加载，云同步功能不可用，将使用本地存储');
+    return;
+  }
+  try {
+    ossClient = new OSS({
+      region: OSS_CONFIG.region,
+      accessKeyId: OSS_CONFIG.accessKeyId,
+      accessKeySecret: OSS_CONFIG.accessKeySecret,
+      bucket: OSS_CONFIG.bucket,
+      endpoint: OSS_CONFIG.endpoint,
+      secure: false
+    });
+    setCloudStatus('☁ 已连接', '');
+  } catch(e) {
+    setCloudStatus('☁ 连接失败', 'error');
+    console.error('OSS初始化失败:', e);
+  }
+}
+
+function setCloudStatus(text, cls) {
+  const el = document.getElementById('cloudStatus');
+  el.textContent = text;
+  el.className = 'cloud-status' + (cls ? ' ' + cls : '');
+}
+
+// 云端保存工作区数据
+async function ossSaveWorkData(data) {
+  if (!ossClient) return false;
+  try {
+    setCloudStatus('☁ 同步中...', 'syncing');
+    await ossClient.put('meter_work.json', new Blob([JSON.stringify(data)], {type:'application/json'}));
+    setCloudStatus(' 已同步', '');
+    return true;
+  } catch(e) {
+    setCloudStatus('☁ 同步失败', 'error');
+    console.error('OSS保存工作区失败:', e);
+    return false;
+  }
+}
+
+// 云端保存历史记录
+async function ossSaveHistory(history) {
+  if (!ossClient) return false;
+  try {
+    await ossClient.put('meter_history.json', new Blob([JSON.stringify(history)], {type:'application/json'}));
+    return true;
+  } catch(e) {
+    console.error('OSS保存历史失败:', e);
+    return false;
+  }
+}
+
+// 云端加载工作区数据
+async function ossLoadWorkData() {
+  if (!ossClient) return null;
+  try {
+    const result = await ossClient.get('meter_work.json');
+    return JSON.parse(result.content.toString());
+  } catch(e) {
+    return null;
+  }
+}
+
+// 云端加载历史记录
+async function ossLoadHistory() {
+  if (!ossClient) return null;
+  try {
+    const result = await ossClient.get('meter_history.json');
+    return JSON.parse(result.content.toString());
+  } catch(e) {
+    return null;
+  }
+}
+
+async function ossLoadFactoryHistory() {
+  if (!ossClient) return null;
+  try {
+    const result = await ossClient.get('youyi-tool-factory-history.json');
+    return JSON.parse(result.content.toString());
+  } catch(e) {
+    return null;
+  }
+}
+
+// 云端同步（下载最新数据）
+async function syncFromCloud() {
+  setCloudStatus(' 同步中...', 'syncing');
+  showToast('正在从云端同步...');
+
+  const [workData, historyData] = await Promise.all([ossLoadWorkData(), ossLoadHistory()]);
+
+  if (workData && workData.rows && workData.rows.length > 0) {
+    document.getElementById('globalRate').value = workData.globalRate || '0.965';
+    document.getElementById('globalCustomer').value = workData.globalCustomer || '';
+    document.getElementById('globalColorCode').value = workData.globalColorCode || '';
+    rows = workData.rows;
+    idCounter = workData.idCounter || 0;
+    if (workData.rateMode) { rateMode = workData.rateMode; syncRateUI(); }
+    localStorage.setItem('meterConverterData', JSON.stringify(workData));
+  }
+
+  if (historyData) {
+    // 合并 delivered 状态：以云端为准，但保留本地的 delivered 标记
+    const localHistory = JSON.parse(localStorage.getItem('meterConverterHistory') || '[]');
+    const localDeliveredMap = {};
+    localHistory.forEach(h => { if (h.delivered) localDeliveredMap[h.id] = true; });
+    // 同时，以本地的 delivered 状态合并到云端数据
+    historyData.forEach(h => {
+      if (localDeliveredMap[h.id]) h.delivered = true;
+    });
+    localStorage.setItem('meterConverterHistory', JSON.stringify(historyData));
+  }
+
+  cloudSynced = true;
+  render();
+  renderHistoryDateList();
+  setCloudStatus(' 已同步', '');
+  showToast('云端同步完成');
+}
+
+// ===== 自动云同步（防抖，3秒内多次只同步一次）=====
+var _autoSaveTimer = null;
+function autoSaveToCloud() {
+  if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(function() {
+    if (!ossClient) return;
+    var customer = (document.getElementById('globalCustomer')||{}).value || '';
+    var orderCode = (document.getElementById('globalColorCode')||{}).value || '';
+    var workData = {
+      globalRate: (document.getElementById('globalRate')||{}).value || '0.965',
+      rateMode: rateMode,
+      globalCustomer: customer,
+      globalColorCode: orderCode,
+      rows: rows,
+      idCounter: idCounter
+    };
+    localStorage.setItem('meterConverterData', JSON.stringify(workData));
+    ossSaveWorkData(workData);
+    
+    // === 自动同步数据到共享存储 ===
+    if (typeof FriendshipSync !== 'undefined') {
+      var syncColors = {};
+      rows.forEach(function(r) {
+        if (r.selfCode && r.origMeters > 0) {
+          syncColors[r.selfCode] = {
+            colorCode: r.selfCode,
+            factoryColor: r.colorCode || '',
+            productCode: orderCode || '',
+            updatedBy: 'v50Tool',
+            updatedAt: new Date().toISOString()
+          };
+        }
+      });
+      if (Object.keys(syncColors).length > 0) {
+        FriendshipSync.syncBatch(null, syncColors, null);
+      }
+    }
+    // 上传共享数据到OSS
+    if (typeof uploadSharedDataToOSS === 'function') {
+      uploadSharedDataToOSS().catch(function(e) { console.error('云端上传失败:', e); });
+    }
+  }, 3000);
+}
+
+// ===== 版本更新检查 =====
+async function checkVersionUpdate() {
+  if (!ossClient) return;
+  try {
+    var result = await ossClient.get('youyi-tool-version.json');
+    var info = JSON.parse(result.content.toString());
+    if (info.version > TOOLS_VERSION && info.url) {
+      showUpdateModal(info.version, info.url, info.date || '');
+    }
+  } catch(e) {
+    // 版本文件不存在，忽略
+  }
+}
+
+function showUpdateModal(newVer, url, date) {
+  var modal = document.createElement('div');
+  modal.id = 'updateModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:12px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.15);">' +
+    '<div style="font-size:18px;font-weight:700;color:#111;margin-bottom:12px;">🎉 发现新版本</div>' +
+    '<div style="font-size:14px;color:#666;margin-bottom:6px;">当前版本：v' + TOOLS_VERSION + '</div>' +
+    '<div style="font-size:14px;color:#111;font-weight:600;margin-bottom:12px;">最新版本：v' + newVer + (date ? ' (' + date + ')' : '') + '</div>' +
+    '<div style="font-size:13px;color:#999;margin-bottom:20px;">更新前会自动保存你的数据</div>' +
+    '<div style="display:flex;gap:10px;">' +
+    '<button onclick="closeUpdateModal()" style="flex:1;padding:10px;background:#f5f5f5;color:#666;border:1px solid #ddd;border-radius:3px;font-size:14px;cursor:pointer;">稍后再说</button>' +
+    '<button onclick="doUpdate(\'' + url.replace(/'/g, "\\'") + '\')" style="flex:1;padding:10px;background:#2E7D32;color:#fff;border:none;border-radius:3px;font-size:14px;font-weight:600;cursor:pointer;">立即更新</button>' +
+    '</div></div>';
+  document.body.appendChild(modal);
+}
+
+function closeUpdateModal() {
+  var m = document.getElementById('updateModal');
+  if (m) m.remove();
+}
+
+async function doUpdate(newUrl) {
+  showToast('正在保存数据...');
+  // 保存当前数据到云端
+  var customer = (document.getElementById('globalCustomer')||{}).value || '';
+  var orderCode = (document.getElementById('globalColorCode')||{}).value || '';
+  var workData = {
+    globalRate: (document.getElementById('globalRate')||{}).value || '0.965',
+    rateMode: rateMode,
+    globalCustomer: customer,
+    globalColorCode: orderCode,
+    rows: rows,
+    idCounter: idCounter
+  };
+  localStorage.setItem('meterConverterData', JSON.stringify(workData));
+  if (ossClient) {
+    await ossSaveWorkData(workData);
+    // 同步历史
+    try {
+      var history = JSON.parse(localStorage.getItem('meterConverterHistory') || '[]');
+      await ossSaveHistory(history);
+    } catch(e){}
+    // 同步工厂数据
+    try {
+      var factoryHistory = JSON.parse(localStorage.getItem('meterConverterFactoryHistory') || '[]');
+      if (factoryHistory.length > 0) {
+        await ossClient.put('youyi-tool-factory-history.json', new Blob([JSON.stringify(factoryHistory)], {type:'application/json'}));
+      }
+    } catch(e){}
+  }
+  showToast('数据已保存，正在跳转...');
+  setTimeout(function() {
+    window.location.href = newUrl;
+  }, 800);
+}
+
+let rows = [];
+let idCounter = 0;
+let rateMode = 'meter'; // 'meter', 'kg', or 'yard'
+
+function updateModeLabels() {
+  var thOrig = document.getElementById('thOrig');
+  var sumLabel = document.getElementById('sumOrigLabel');
+  if (thOrig) thOrig.textContent = '原数量';
+  if (sumLabel) sumLabel.textContent = '原数量合计';
+}
+
+function switchRateMode() {
+  saveRateVal();
+  if (rateMode === 'meter') {
+    rateMode = 'kg';
+    document.getElementById('rateLabel').textContent = '公斤转换率';
+    document.getElementById('rateUnit').textContent = '直接加KG';
+    document.getElementById('switchRateBtn').textContent = '切换码数';
+    document.getElementById('globalRate').value = document.getElementById('globalRate').dataset.kgVal || '2';
+    document.getElementById('globalRate').step = '0.1';
+    document.getElementById('globalRate').max = '9999';
+  } else if (rateMode === 'kg') {
+    rateMode = 'yard';
+    document.getElementById('rateLabel').textContent = '码数转换率';
+    document.getElementById('rateUnit').textContent = 'Y';
+    document.getElementById('switchRateBtn').textContent = '切换米数';
+    document.getElementById('globalRate').value = document.getElementById('globalRate').dataset.yardVal || '0';
+    document.getElementById('globalRate').step = '0.1';
+    document.getElementById('globalRate').max = '200';
+  } else {
+    rateMode = 'meter';
+    document.getElementById('rateLabel').textContent = '米数转换率';
+    document.getElementById('rateUnit').textContent = '%';
+    document.getElementById('switchRateBtn').textContent = '切换公斤';
+    document.getElementById('globalRate').value = document.getElementById('globalRate').dataset.meterVal || '0.965';
+    document.getElementById('globalRate').step = '0.1';
+    document.getElementById('globalRate').max = '200';
+  }
+  // 切换模式后，同步所有行的转换率为新的全局转换率
+  const newGlobalRate = parseFloat(document.getElementById('globalRate').value) || 0;
+  rows.forEach(r => r.rate = newGlobalRate);
+  updateModeLabels();
+  render();
+}
+
+function syncRateUI() {
+  if (rateMode === 'kg') {
+    document.getElementById('rateLabel').textContent = '公斤转换率';
+    document.getElementById('rateUnit').textContent = '直接加KG';
+    document.getElementById('switchRateBtn').textContent = '切换码数';
+    document.getElementById('globalRate').max = '9999';
+  } else if (rateMode === 'yard') {
+    document.getElementById('rateLabel').textContent = '码数转换率';
+    document.getElementById('rateUnit').textContent = 'Y';
+    document.getElementById('switchRateBtn').textContent = '切换米数';
+    document.getElementById('globalRate').max = '200';
+  } else {
+    document.getElementById('rateLabel').textContent = '米数转换率';
+    document.getElementById('rateUnit').textContent = '%';
+    document.getElementById('switchRateBtn').textContent = '切换公斤';
+    document.getElementById('globalRate').max = '200';
+  }
+  updateModeLabels();
+}
+
+// ===== 初始化 =====
+async function init() {
+  const isCleanInit = !localStorage.getItem('cleanV20260719');
+  if (isCleanInit) {
+    localStorage.clear();
+    localStorage.setItem('cleanV20260719', '1');
+    // 云端旧数据因签名问题无法远程清除，跳过云端加载即可
+  }
+  initOSS();
+  // 如果是全新初始化，跳过所有旧数据加载
+  if (isCleanInit) {
+    render();
+    return;
+  }
+  // 优先从本地加载
+  const hasLocal = loadData();
+  // 尝试从云端加载（仅当云端有实际数据时才覆盖本地）
+  const cloudData = await ossLoadWorkData();
+  if (cloudData && cloudData.rows && cloudData.rows.length > 0) {
+    // 清理旧数据：条数模式→米数，转换率强制重置为默认值
+    if (cloudData.rateMode === 'strip') cloudData.rateMode = 'meter';
+    const modeDefaults = { meter: '0.965', kg: '2', yard: '0' };
+    const defaultRate = modeDefaults[cloudData.rateMode] || '0.965';
+    if (cloudData.globalRate && cloudData.globalRate !== defaultRate) {
+      // 如果云端存的转换率和当前模式默认值不一样，用默认值覆盖
+      cloudData.globalRate = defaultRate;
+    }
+    document.getElementById('globalRate').value = cloudData.globalRate || defaultRate;
+    document.getElementById('globalCustomer').value = cloudData.globalCustomer || '';
+    document.getElementById('globalColorCode').value = cloudData.globalColorCode || '';
+    rows = cloudData.rows;
+    idCounter = cloudData.idCounter || 0;
+    if (cloudData.rateMode) { rateMode = cloudData.rateMode; syncRateUI(); }
+    localStorage.setItem('meterConverterData', JSON.stringify(cloudData));
+    cloudSynced = true;
+  }
+  // 本地也没有则不添加默认行（页面空白，等用户手动新增）
+  // 加载历史：仅当本地没有数据时才从云端加载
+  const localHistory = JSON.parse(localStorage.getItem('meterConverterHistory') || '[]');
+  if (localHistory.length === 0) {
+    const cloudHistory = await ossLoadHistory();
+    if (cloudHistory && cloudHistory.length > 0) {
+      localStorage.setItem('meterConverterHistory', JSON.stringify(cloudHistory));
+      cloudSynced = true;
+    }
+  } else {
+    // 本地有数据，尝试合并云端的新增记录（保留本地 delivered 状态）
+    const cloudHistory = await ossLoadHistory();
+    if (cloudHistory && cloudHistory.length > 0) {
+      const localIds = new Set(localHistory.map(h => h.id));
+      const localDeliveredMap = {};
+      localHistory.forEach(h => { if (h.delivered) localDeliveredMap[h.id] = true; });
+      // 把云端新增的记录合并进来
+      cloudHistory.forEach(h => {
+        if (!localIds.has(h.id)) {
+          localHistory.push(h);
+        } else if (localDeliveredMap[h.id]) {
+          // 保留本地的 delivered 状态
+          const existing = localHistory.find(lh => lh.id === h.id);
+          if (existing) existing.delivered = true;
+        }
+      });
+      localStorage.setItem('meterConverterHistory', JSON.stringify(localHistory));
+    }
+  }
+  // 加载工厂报数历史：仅当本地没有时才从云端加载
+  const localFactory = JSON.parse(localStorage.getItem('meterConverterFactoryHistory') || '[]');
+  if (localFactory.length === 0) {
+    const cloudFactory = await ossLoadFactoryHistory();
+    if (cloudFactory && cloudFactory.length > 0) {
+      localStorage.setItem('meterConverterFactoryHistory', JSON.stringify(cloudFactory));
+    }
+  }
+  render();
+  // 检查是否有新版本
+  checkVersionUpdate();
+}
+
+// ===== 回车键处理 =====
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  const input = e.target;
+  if (!input.closest('tbody')) return;
+  e.preventDefault();
+  const tr = input.closest('tr');
+  const origInput = tr.querySelector('.row-orig');
+  const origVal = parseFloat(origInput.value);
+  if (!origVal || origVal <= 0) { showToast('请先输入原数量'); origInput.focus(); return; }
+  const allRows = document.querySelectorAll('#tableBody tr');
+  const currentIdx = Array.from(allRows).indexOf(tr);
+  const isLastRow = currentIdx === allRows.length - 1;
+  if (isLastRow) { addRow(); }
+  else {
+    setTimeout(() => {
+      const nextRow = allRows[currentIdx + 1];
+      const nextInput = nextRow.querySelector('.row-orig');
+      if (nextInput) {
+        nextInput.focus(); nextInput.select();
+        nextRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }, 30);
+  }
+});
+
+function addRowData(origMeters, rate, customerName = '', colorCode = '', selfCode = '') {
+  idCounter++;
+  rows.push({ id: idCounter, index: rows.length + 1, customerName, colorCode, selfCode, origMeters, rate });
+}
+
+function addRow() {
+  const rate = parseFloat(document.getElementById('globalRate').value) || (rateMode === 'kg' ? 2 : (rateMode === 'yard' ? 0 : 0.965));
+  const customerName = document.getElementById('globalCustomer').value.trim();
+  // 继承上一行的色号，如果上一行没有色号则为空
+  let colorCode = '';
+  let selfCode = '';
+  if (rows.length > 0) {
+    const lastRow = rows[rows.length - 1];
+    colorCode = lastRow.colorCode || '';
+    selfCode = lastRow.selfCode || '';
+  }
+  addRowData('', rate, customerName, colorCode, selfCode);
+  render();
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.row-orig');
+    if (inputs.length > 0) {
+      inputs[inputs.length - 1].focus(); inputs[inputs.length - 1].select();
+      inputs[inputs.length - 1].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, 50);
+}
+
+function deleteRow(id) { rows = rows.filter(r => r.id !== id); reindex(); render(); }
+function reindex() { rows.forEach((r, i) => r.index = i + 1); }
+
+function calcConverted(orig, rate) {
+  if (!orig) return 0;
+  if (rateMode === 'kg' || rateMode === 'yard') {
+    if (rate === '' || rate === undefined || rate === null) return 0;
+    return Math.round(orig + Number(rate));
+  }
+  if (!rate) return 0;
+  var absRate = Math.abs(rate);
+  if (rate < 0) return Math.round(orig * (absRate / 100));
+  return round1(orig / absRate);
+}
+
+function saveRateVal() {
+  var el = document.getElementById('globalRate');
+  if (rateMode === 'meter') el.dataset.meterVal = el.value;
+  else if (rateMode === 'kg') el.dataset.kgVal = el.value;
+  else if (rateMode === 'yard') el.dataset.yardVal = el.value;
+  render();
+}
+
+function render() {
+  const tbody = document.getElementById('tableBody');
+  let html = '';
+  let prevColor = '';
+  rows.forEach((r, i) => {
+    var converted = calcConverted(r.origMeters, r.rate);
+    var sepClass = (i > 0 && r.colorCode !== prevColor && r.colorCode && prevColor) ? ' group-separator' : '';
+    prevColor = r.colorCode || '';
+    html += '<tr class="' + sepClass + '">' +
+      '<td class="td-index">' + (i+1) + '</td>' +
+      '<td class="td-color"><input class="row-factory-color" type="text" value="' + (r.colorCode||'') + '" placeholder="工厂色号" oninput="updateField(' + r.id + ',\'colorCode\',this.value);onColorInput(this)" onblur="setTimeout(function(el){hideColorSuggestion();autoAddHash(el)},200,this)" autocomplete="off"></td>' +
+      '<td class="td-color" style="background:#f0e2d0;"><input class="row-color" type="text" value="' + (r.selfCode||'') + '" placeholder="自编色号" style="color:#8b5e3c;font-weight:700;" oninput="updateField(' + r.id + ',\'selfCode\',this.value);onColorInput(this)" onblur="setTimeout(function(el){hideColorSuggestion();autoAddHash(el)},200,this)" autocomplete="off"></td>' +
+      '<td class="td-meters"><input class="row-orig" type="number" value="' + (r.origMeters||'') + '" placeholder="' + ({'meter':'0米','kg':'0kg','yard':'0Y'}[rateMode]||'0') + '" step="0.1" oninput="updateField(' + r.id + ',\'origMeters\',this.value)"></td>' +
+      '<td class="td-rate"><input type="number" value="' + r.rate + '" placeholder="' + (rateMode==='kg'||rateMode==='yard'?'0':'0.965') + '" step="0.1" oninput="updateField(' + r.id + ',\'rate\',this.value)"></td>' +
+      '<td class="td-result">' + (converted || '-') + '</td>' +
+      '<td class="td-delete"><button class="btn-del" onclick="deleteRow(' + r.id + ')" title="\u5220\u9664">\u2715</button></td>' +
+    '</tr>';
+  });
+  tbody.innerHTML = html;
+  updateSummary();
+  updateFormula();
+}
+
+
+// ===== 色号联想功能 =====
+function onColorInput(el) {
+  var val = el.value.trim();
+  var cid = el.getAttribute('data-cid') || el.id;
+  var suggestBox = document.getElementById('color-suggest-' + cid);
+  if (!suggestBox) {
+    suggestBox = document.createElement('div');
+    suggestBox.id = 'color-suggest-' + cid;
+    suggestBox.className = 'color-suggest-box';
+    suggestBox.style.cssText = 'display:none;position:absolute;z-index:100;background:#fff;border:1px solid #ddd;border-radius:4px;max-height:200px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,0.1);';
+    document.body.appendChild(suggestBox);
+  }
+  
+  if (!val || val.length < 1) {
+    suggestBox.style.display = 'none';
+    return;
+  }
+  
+  var history = [];
+  try {
+    var saved = localStorage.getItem('youyi_color_history');
+    if (saved) history = JSON.parse(saved);
+  } catch(e) {}
+  
+  var matches = [];
+  for (var i = 0; i < history.length; i++) {
+    if (history[i].toLowerCase().indexOf(val.toLowerCase()) === 0) {
+      matches.push(history[i]);
+      if (matches.length >= 10) break;
+    }
+  }
+  if (matches.length < 10) {
+    for (var i = 0; i < history.length; i++) {
+      if (matches.indexOf(history[i]) === -1 && history[i].toLowerCase().indexOf(val.toLowerCase()) !== -1) {
+        matches.push(history[i]);
+        if (matches.length >= 10) break;
+      }
+    }
+  }
+  
+  if (matches.length === 0) {
+    suggestBox.style.display = 'none';
+    return;
+  }
+  
+  var html = '';
+  for (var i = 0; i < matches.length; i++) {
+    html += '<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f5f5f5;font-size:13px;" ' +
+      'onmouseover="this.style.background=\'#fff7e6\'" onmouseout="this.style.background=\'#fff\'" ' +
+      'onmousedown="selectColorSuggestion(this,\'' + matches[i].replace(/'/g, "\\'") + '\')">' +
+      matches[i] + '</div>';
+  }
+  suggestBox.innerHTML = html;
+  suggestBox.style.display = 'block';
+  
+  var rect = el.getBoundingClientRect();
+  suggestBox.style.left = rect.left + 'px';
+  suggestBox.style.top = (rect.bottom + window.scrollY) + 'px';
+  suggestBox.style.width = rect.width + 'px';
+}
+
+function selectColorSuggestion(div, value) {
+  var input = div.parentElement.previousElementSibling || div.parentElement.parentElement.querySelector('input.color-input');
+  if (input) input.value = value;
+  hideColorSuggestion();
+  saveColorToHistory(value);
+}
+
+function hideColorSuggestion() {
+  var boxes = document.querySelectorAll('.color-suggest-box');
+  for (var i = 0; i < boxes.length; i++) {
+    boxes[i].style.display = 'none';
+  }
+}
+
+function saveColorToHistory(colorCode) {
+  if (!colorCode) return;
+  var history = [];
+  try {
+    var saved = localStorage.getItem('youyi_color_history');
+    if (saved) history = JSON.parse(saved);
+  } catch(e) {}
+  
+  if (history.indexOf(colorCode) === -1) {
+    history.unshift(colorCode);
+    if (history.length > 100) history = history.slice(0, 100);
+    try {
+      localStorage.setItem('youyi_color_history', JSON.stringify(history));
+    } catch(e) {}
+  }
+}
+
+function autoAddHash(el) {
+  var v = el.value.trim();
+  if (v && !v.endsWith('#')) {
+    el.value = v + '#';
+    var field = el.classList.contains('row-factory-color') ? 'colorCode' : 'selfCode';
+    updateField(parseInt(el.closest('tr').querySelector('.btn-del').getAttribute('onclick').match(/\d+/)), field, el.value);
+  }
+}
+function syncAllRowRates(value) {
+  const rate = parseFloat(value) || 0;
+  rows.forEach(r => r.rate = rate);
+  render();
+}
+
+function updateField(id, field, value) {
+  const row = rows.find(r => r.id === id);
+  if (!row) return;
+  if (field === 'origMeters' || field === 'rate') row[field] = parseFloat(value) || 0;
+  else if (field === 'colorCode' || field === 'customerName' || field === 'selfCode') row[field] = value;
+  updateSummary(); updateFormula();
+  const tr = document.querySelector('[onclick="deleteRow(' + id + ')"]').closest('tr');
+  tr.querySelector('.td-result').textContent = calcConverted(row.origMeters, row.rate) || '-';
+}
+
+
+
+function updateSummary() {
+  const validRows = rows.filter(r => r.origMeters > 0 && r.rate !== '');
+  let sumOrig = 0, sumConv = 0;
+  validRows.forEach(r => { const c = calcConverted(r.origMeters, r.rate); sumOrig += r.origMeters; sumConv += c; });
+  document.getElementById('sumCount').textContent = validRows.length;
+  document.getElementById('sumOrig').textContent = round1(sumOrig);
+  document.getElementById('sumConv').textContent = round1(sumConv);
+  document.getElementById('sumDiff').textContent = round1(sumConv - sumOrig);
+}
+
+function updateFormula() {
+  const validRows = rows.filter(r => r.origMeters > 0 && r.rate !== '');
+  const el = document.getElementById('formulaDisplay');
+  if (validRows.length === 0) { el.innerHTML = '暂无数据'; return; }
+  const groups = []; let cur = null;
+  validRows.forEach(r => {
+    const color = r.colorCode || '';
+    if (cur && cur.color === color) cur.items.push(r);
+    else { cur = { color, items: [r] }; groups.push(cur); }
+  });
+  var unit = rateMode === 'kg' ? 'KG' : (rateMode === 'yard' ? 'Y' : '米');
+  let html = '';
+  groups.forEach((g, gi) => {
+    const vals = g.items.map(r => calcConverted(r.origMeters, r.rate));
+    if (gi > 0) html += '<br>';
+    var colorLabel = g.color ? (g.color.indexOf('#') === -1 ? g.color + '#' : g.color) : '';
+    if (colorLabel) html += '<span style="color:#ff7a00;font-weight:600;">' + colorLabel + '</span>：';
+    if (vals.length === 1) html += '<span class="num">' + vals[0] + unit + '</span>';
+    else { const sum = round1(vals.reduce((a,b)=>a+b,0)); html += vals.map(v=>'<span class="num">' + v + unit + '</span>').join(' + ') + ' = <span class="num">' + sum + unit + '</span>'; }
+  });
+  el.innerHTML = html;
+}
+
+function round1(n) { return Math.round(n); }
+
+function validateCopyFields() {
+  const errors = [];
+  const customer = document.getElementById('globalCustomer').value.trim();
+  const orderCode = document.getElementById('globalColorCode').value.trim();
+  const validRows = rows.filter(r => r.origMeters > 0 && r.rate !== '');
+  if (!customer) errors.push('客户名称');
+  if (!orderCode) errors.push('色卡编号');
+  if (validRows.length === 0) errors.push('原数量数据');
+  const emptyColorRows = validRows.filter(r => !r.selfCode || !r.selfCode.trim());
+  if (emptyColorRows.length > 0) errors.push('部分行未填色号');
+  return errors;
+}
+
+function copyConverted() {
+  const errors = validateCopyFields();
+  if (errors.length > 0) { showToast('复制失败：请填写 ' + errors.join('、')); return; }
+  const customer = document.getElementById('globalCustomer').value.trim();
+  const orderCode = document.getElementById('globalColorCode').value.trim();
+  const validRows = rows.filter(r => r.origMeters > 0 && r.rate !== '');
+  const groups = []; let cur = null;
+  validRows.forEach(r => { const c = r.selfCode||''; if(cur&&cur.color===c)cur.items.push(r); else{cur={color:c,items:[r]};groups.push(cur);} });
+  let text = '';
+  if (customer) text += customer + '\n';
+  if (orderCode) text += '下单编号：' + orderCode + '\n';
+  if (text) text += '\n';
+  var unit = rateMode === 'kg' ? 'KG' : (rateMode === 'yard' ? 'Y' : '米');
+  groups.forEach(g => {
+    const vals = g.items.map(r => calcConverted(r.origMeters, r.rate));
+    const sum = round1(vals.reduce((a,b)=>a+b,0));
+    var colorLabel = g.color ? (g.color.indexOf('#') === -1 ? g.color + '#' : g.color) + '：' : '';
+    if (g.color) text += colorLabel + sum + unit + '\n';
+    else vals.forEach(v => text += v + unit + '\n');
+  });
+  copyText(text.trim());
+}
+
+function copyFormula() {
+  const errors = validateCopyFields();
+  if (errors.length > 0) { showToast('复制失败：请填写 ' + errors.join('、')); return; }
+  const customer = document.getElementById('globalCustomer').value.trim();
+  const orderCode = document.getElementById('globalColorCode').value.trim();
+  const validRows = rows.filter(r => r.origMeters > 0 && r.rate !== '');
+  const groups = []; let cur = null;
+  validRows.forEach(r => { const c = r.colorCode||''; if(cur&&cur.color===c)cur.items.push(r); else{cur={color:c,items:[r]};groups.push(cur);} });
+  let text = '';
+  if (customer) text += customer + '\n';
+  if (orderCode) text += '下单编号：' + orderCode + '\n';
+  if (text) text += '\n';
+  var unit = rateMode === 'kg' ? 'KG' : (rateMode === 'yard' ? 'Y' : '米');
+  groups.forEach(g => {
+    const vals = g.items.map(r => calcConverted(r.origMeters, r.rate));
+    const valsWithUnit = vals.map(v => v + unit);
+    const sum = round1(vals.reduce((a,b)=>a+b,0));
+    var colorLabel = g.color ? (g.color.indexOf('#') === -1 ? g.color + '#' : g.color) + '：' : '';
+    if (g.color) text += colorLabel + valsWithUnit.join(' + ') + ' = ' + sum + unit + '\n';
+    else text += valsWithUnit.join(' + ') + ' = ' + sum + unit + '\n';
+  });
+  copyText(text.trim());
+}
+
+function copyText(text) {
+  // 方法1：现代剪贴板API
+  if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext !== false) {
+    navigator.clipboard.writeText(text).then(()=>{
+      showToast('已复制');
+    }).catch(()=>{
+      // 方法2：textarea + execCommand（iOS兼容）
+      fallbackCopy(text);
+    });
+  } else {
+    // 方法2：textarea + execCommand（iOS兼容）
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:none;outline:none;boxShadow:none;background:transparent;opacity:0.01;';
+  ta.setAttribute('readonly', '');
+  ta.style.userSelect = 'text';
+  ta.style.webkitUserSelect = 'text';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  try {
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) { showToast('已复制'); return; }
+  } catch(e) {}
+  document.body.removeChild(ta);
+  // 方法3：弹出手动复制框
+  promptCopy(text);
+}
+
+function promptCopy(text) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  modal.innerHTML = '<div style="background:#fff;border-radius:12px;padding:20px;width:100%;max-width:400px;box-shadow:0 4px 20px rgba(0,0,0,0.15);">' +
+    '<div style="font-size:16px;font-weight:600;margin-bottom:12px;text-align:center;">请手动复制以下内容</div>' +
+    '<textarea id="copyModalText" style="width:100%;height:180px;border:1px solid #e0e0e0;border-radius:6px;padding:10px;font-size:14px;line-height:1.5;resize:none;background:#F5FBF5;">' + escaped + '</textarea>' +
+    '<button id="copyModalBtn" style="width:100%;margin-top:12px;padding:12px;background:#2E7D32;color:#fff;border:none;border-radius:3px;font-size:15px;font-weight:600;cursor:pointer;">📋 点击复制</button>' +
+    '<button onclick="this.parentElement.parentElement.remove()" style="width:100%;margin-top:8px;padding:10px;background:#f5f5f5;color:#666;border:none;border-radius:3px;font-size:14px;">关闭</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+  // 绑定复制按钮事件
+  var btn = document.getElementById('copyModalBtn');
+  var ta = document.getElementById('copyModalText');
+  btn.onclick = function() {
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    try {
+      if (document.execCommand('copy')) {
+        btn.textContent = '✅ 已复制!';
+        btn.style.background = '#52c41a';
+        setTimeout(function(){ modal.remove(); }, 1000);
+        return;
+      }
+    } catch(e) {}
+    // execCommand 也失败，提示用户手动长按复制
+    btn.textContent = '请长按文本手动复制';
+    btn.style.background = '#fa8c16';
+    ta.focus();
+  };
+}
+
+function importCSV(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.split(/[\r\n]+/).filter(l=>l.trim());
+    const rate = parseFloat(document.getElementById('globalRate').value) || 0.965;
+    const customerName = document.getElementById('globalCustomer').value.trim();
+    const colorCode = document.getElementById('globalColorCode').value.trim();
+    let imported = 0;
+    lines.forEach(line => {
+      const cols = line.split(/[,\t\s]+/);
+      const num = parseFloat(cols[cols.length-1]);
+      if (!isNaN(num) && num > 0) { addRowData(num, rate, customerName, colorCode); imported++; }
+    });
+    if (imported > 0) { render(); showToast('成功导入 ' + imported + ' 条数据'); }
+    else showToast('未识别到有效数据');
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 1500);
+}
+
+document.getElementById('globalRate').addEventListener('change', function() {
+  const newRate = parseFloat(this.value);
+  if (newRate === undefined || isNaN(newRate)) return;
+  // 更新所有行的转换率
+  rows.forEach(r => r.rate = newRate);
+  saveRateVal();
+  render();
+});
+
+// ===== 保存 → 本地+云端双备份 =====
+async function saveData() {
+  const validRows = rows.filter(r => r.origMeters > 0 && r.rate !== '');
+  if (validRows.length === 0) { showToast('没有数据可保存'); return; }
+  const customer = document.getElementById('globalCustomer').value.trim();
+  const orderCode = document.getElementById('globalColorCode').value.trim();
+  if (!customer) { showToast('请填写客户名称'); document.getElementById('globalCustomer').focus(); return; }
+
+  const today = new Date();
+  const dateStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  const timeStr = String(today.getHours()).padStart(2,'0') + ':' + String(today.getMinutes()).padStart(2,'0');
+
+  const snapshot = {
+    id: Date.now(),
+    date: dateStr,
+    time: timeStr,
+    customer: customer,
+    orderNo: orderCode,
+    rows: validRows.map(r => ({ colorCode: r.colorCode||'', selfCode: r.selfCode||'', origMeters: r.origMeters, rate: r.rate })),
+    delivered: false,
+    remark: ''
+  };
+
+  // 读取已有历史
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('meterConverterHistory') || '[]'); } catch(e){}
+  history.push(snapshot);
+  localStorage.setItem('meterConverterHistory', JSON.stringify(history));
+
+  // 保存当前工作区快照
+  const workData = {
+    globalRate: document.getElementById('globalRate').value,
+    rateMode: rateMode,
+    globalCustomer: customer,
+    globalColorCode: orderCode,
+    rows: rows,
+    idCounter: idCounter
+  };
+  localStorage.setItem('meterConverterData', JSON.stringify(workData));
+
+  // 云端同步
+  await Promise.all([ossSaveWorkData(workData), ossSaveHistory(history)]);
+
+  // 保存成功后自动清空产品数据，准备输入下一个客户
+  rows = [];
+  idCounter = 0;
+  document.getElementById('globalColorCode').value = '';
+  // 客户名不清空（通常连续给同一客户下单）
+  render();
+  // 保存清空后的工作区状态
+  const clearedWorkData = {
+    globalRate: document.getElementById('globalRate').value,
+    rateMode: rateMode,
+    globalCustomer: customer,
+    globalColorCode: '',
+    rows: [],
+    idCounter: 0
+  };
+  localStorage.setItem('meterConverterData', JSON.stringify(clearedWorkData));
+  ossSaveWorkData(clearedWorkData);
+
+  // === 同步数据到共享存储 ===
+  (function() {
+    if (typeof FriendshipSync === 'undefined') return;
+    var syncColors = {};
+    var syncProducts = {};
+    
+    // 从快照的rows中提取色号和工厂色号
+    var orderCode = document.getElementById('globalColorCode')?.value.trim() || '';
+    validRows.forEach(function(r) {
+      // selfCode = 自编色号, colorCode = 工厂色号
+      if (r.selfCode) {
+        syncColors[r.selfCode] = {
+          colorCode: r.selfCode,
+          factoryColor: r.colorCode || '',
+          productCode: orderCode || '',
+          updatedBy: 'v50Tool',
+          updatedAt: new Date().toISOString()
+        };
+      }
+    });
+    
+    // 同步产品（使用订单号作为产品编号）
+    if (orderCode) {
+      syncProducts[orderCode] = {
+        productCode: orderCode,
+        productName: '',
+        factory: '',
+        factoryCode: '',
+        updatedBy: 'v50Tool',
+        updatedAt: new Date().toISOString()
+      };
+    }
+    
+    FriendshipSync.syncBatch(syncProducts, syncColors, null);
+    console.log('[FriendshipSync] 大货工具数据已同步:', Object.keys(syncProducts).length, '个产品,', Object.keys(syncColors).length, '个色号');
+  })();
+  
+  showToast('已保存并同步云端（' + customer + ' ' + timeStr + '）');
+}
+
+function loadData() {
+  const saved = localStorage.getItem('meterConverterData');
+  if (!saved) return false;
+  try {
+    const data = JSON.parse(saved);
+    if (data.rateMode === 'strip') data.rateMode = 'meter';
+    const modeDefaults2 = { meter: '0.965', kg: '2', yard: '0' };
+    const defaultRate2 = modeDefaults2[data.rateMode] || '0.965';
+    if (data.globalRate && data.globalRate !== defaultRate2) {
+      data.globalRate = defaultRate2;
+    }
+    document.getElementById('globalRate').value = data.globalRate || defaultRate2;
+    if (data.rateMode) { rateMode = data.rateMode; syncRateUI(); }
+    document.getElementById('globalCustomer').value = data.globalCustomer || '';
+    document.getElementById('globalColorCode').value = data.globalColorCode || '';
+    rows = data.rows || []; idCounter = data.idCounter || 0;
+    return rows.length > 0;
+  } catch(e) { return false; }
+}
+
+function clearData() {
+  if (!confirm('确定清空当前工作区数据吗？历史记录将保留。')) return;
+  rows = []; idCounter = 0;
+  document.getElementById('globalRate').value = '0.965';
+  document.getElementById('globalCustomer').value = '';
+  document.getElementById('globalColorCode').value = '';
+  // 清除工作区（保留历史记录）
+  localStorage.removeItem('meterConverterData');
+  // 同步清除云端
+  ossSaveWorkData({
+    globalRate: '0.965',
+    rateMode: rateMode,
+    globalCustomer: '',
+    globalColorCode: '',
+    rows: [],
+    idCounter: 0
+  });
+  render();
+  showToast('工作区已清空');
+}
+
+// ===== 历史记录 =====
+function openHistory() {
+  document.getElementById('historyPage').classList.add('show');
+  const history = getHistory();
+  if (history.length > 0) {
+    const allDates = [...new Set(history.map(h=>h.date))].sort();
+    document.getElementById('hDateFrom').value = allDates[0];
+    document.getElementById('hDateTo').value = allDates[allDates.length-1];
+  }
+  // 默认激活未配送筛选
+  historyUndeliveredOnly = true;
+  historyDeliveredOnly = false;
+  document.getElementById('hFilterUndelivered').style.background = '#000';
+  document.getElementById('hFilterDelivered').style.background = '#444';
+  renderHistoryDateList();
+}
+
+function closeHistory() {
+  document.getElementById('historyPage').classList.remove('show');
+  // 关闭时重置筛选状态，下次打开默认未配送
+  historyUndeliveredOnly = false;
+  historyDeliveredOnly = false;
+}
+
+function getHistory() {
+  try { 
+    let h = JSON.parse(localStorage.getItem('meterConverterHistory') || '[]'); 
+    h.forEach(r => { if (r.delivered === undefined) r.delivered = false; });
+    return h; 
+  } catch(e) { return []; }
+}
+
+function getFilteredHistory() {
+  const from = document.getElementById('hDateFrom').value;
+  const to = document.getElementById('hDateTo').value;
+  let history = getHistory();
+  // 给缺少 delivered 字段的记录补默认值 false
+  history.forEach(h => { if (h.delivered === undefined) h.delivered = false; });
+  if (from && to) history = history.filter(h => h.date >= from && h.date <= to);
+  return history;
+}
+
+function applyHistoryFilter() {
+  const from = document.getElementById('hDateFrom').value;
+  const to = document.getElementById('hDateTo').value;
+  if (!from || !to) { showToast('请选择日期范围'); return; }
+  document.getElementById('hPage1').style.display = 'block';
+  document.getElementById('hPage2').style.display = 'none';
+  document.getElementById('hPage3').style.display = 'none';
+  document.getElementById('hSearchInput').value = '';
+  renderHistoryDateList();
+}
+
+function resetHistoryFilter() {
+  const history = getHistory();
+  if (history.length > 0) {
+    const allDates = [...new Set(history.map(h=>h.date))].sort();
+    document.getElementById('hDateFrom').value = allDates[0];
+    document.getElementById('hDateTo').value = allDates[allDates.length-1];
+  }
+  document.getElementById('hSearchInput').value = '';
+  // 重置筛选状态
+  historyUndeliveredOnly = false;
+  historyDeliveredOnly = false;
+  document.getElementById('hFilterUndelivered').style.background = '#222';
+  document.getElementById('hFilterDelivered').style.background = '#222';
+  document.getElementById('hPage1').style.display = 'block';
+  document.getElementById('hPage2').style.display = 'none';
+  document.getElementById('hPage3').style.display = 'none';
+  renderHistoryDateList();
+}
+
+let historyUndeliveredOnly = false;
+let historyDeliveredOnly = false;
+function refreshHistoryView() {
+  if (document.getElementById('hPage2').style.display === 'block') {
+    const dateTitle = document.getElementById('hPageTitle').textContent;
+    const date = dateTitle.split(' ')[0];
+    openHistoryDate(date);
+  } else {
+    renderHistoryDateList();
+  }
+}
+function toggleHistoryUndelivered() {
+  historyUndeliveredOnly = true;
+  historyDeliveredOnly = false;
+  document.getElementById('hFilterUndelivered').style.background = '#000';
+  document.getElementById('hFilterDelivered').style.background = '#444';
+  refreshHistoryView();
+}
+function toggleHistoryDelivered() {
+  historyDeliveredOnly = true;
+  historyUndeliveredOnly = false;
+  document.getElementById('hFilterDelivered').style.background = '#000';
+  document.getElementById('hFilterUndelivered').style.background = '#444';
+  refreshHistoryView();
+}
+
+function toggleRecordDelivered(id, evt) {
+  if (evt) { evt.preventDefault(); evt.stopPropagation(); }
+  let history = getHistory();
+  const record = history.find(h => h.id === id);
+  if (!record) return;
+  record.delivered = !record.delivered;
+  localStorage.setItem('meterConverterHistory', JSON.stringify(history));
+  // 后台保存云端（不阻塞界面）
+  ossSaveHistory(history);
+  // 保存当前展开的客户卡片
+  saveExpandedCustomers();
+  // 直接从已更新的localStorage重新读取，确保数据一致
+  const freshHistory = getHistory();
+  const dateTitle = document.getElementById('hPageTitle').textContent;
+  const curDate = dateTitle.split(' ')[0];
+  const dayRecords = freshHistory.filter(h => h.date === curDate);
+  const allDone = dayRecords.every(h => h.delivered);
+  // 确保详情页保持显示
+  document.getElementById('hPage1').style.display = 'none';
+  document.getElementById('hPage3').style.display = 'none';
+  document.getElementById('hPage2').style.display = 'block';
+  if (allDone) {
+    // 全部完成，跳回日期列表
+    setTimeout(function() {
+      document.getElementById('hPage2').style.display = 'none';
+      document.getElementById('hPage1').style.display = 'block';
+      renderHistoryDateList();
+    }, 300);
+  } else {
+    // 还有未完成，留在当前详情页刷新内容
+    openHistoryDate(curDate);
+  }
+}
+
+function renderHistoryDateList() {
+  let history = getFilteredHistory();
+  const byDate = {};
+  history.forEach(h => {
+    if (!byDate[h.date]) byDate[h.date] = [];
+    byDate[h.date].push(h);
+  });
+  let sortedDates = Object.keys(byDate).sort().reverse();
+  // 未配送模式：排除已全部完成的日期
+  if (historyUndeliveredOnly) {
+    sortedDates = sortedDates.filter(date => !byDate[date].every(i => i.delivered));
+  }
+  // 已配送模式：只显示有已配送记录的日期
+  if (historyDeliveredOnly) {
+    sortedDates = sortedDates.filter(date => byDate[date].some(i => i.delivered));
+  }
+
+  if (sortedDates.length === 0) {
+    document.getElementById('hDateList').innerHTML = '';
+    document.getElementById('hNoResult1').style.display = 'block';
+    return;
+  }
+  document.getElementById('hNoResult1').style.display = 'none';
+
+  let html = '';
+  sortedDates.forEach(date => {
+    const items = byDate[date];
+    const custNames = [...new Set(items.map(i=>i.customer))];
+    const weekday = ['周日','周一','周二','周三','周四','周五','周六'][new Date(date).getDay()];
+    html += '<div class="h-date-card" onclick="openHistoryDate(\'' + date + '\')">' +
+      '<div><div class="h-date-text">' + date + ' ' + weekday + (historyUndeliveredOnly ? ' <span style="color:#fa8c16;font-size:12px;margin-left:4px;">未完成配送任务</span>' : historyDeliveredOnly ? ' <span style="color:#52c41a;font-size:12px;margin-left:4px;">已完成配送</span>' : '') + (items.every(i=>i.delivered) ? ' <span style="color:#52c41a;font-size:12px;">✅已配送</span>' : items.some(i=>i.delivered) ? ' <span style="color:#fa8c16;font-size:12px;">⏳部分</span>' : '') + '</div>' +
+      '<div class="h-count-text">' + custNames.length + ' 位客户 · ' + items.length + ' 单订单</div></div>' +
+      '<div class="h-arrow">›</div></div>';
+  });
+  document.getElementById('hDateList').innerHTML = html;
+}
+
+function openHistoryDate(date) {
+  document.getElementById('hPage1').style.display = 'none';
+  document.getElementById('hPage3').style.display = 'none';
+  document.getElementById('hPage2').style.display = 'block';
+  const weekday = ['周日','周一','周二','周三','周四','周五','周六'][new Date(date).getDay()];
+  let titleText = date + ' ' + weekday;
+  if (historyUndeliveredOnly) titleText += ' 未完成配送任务';
+  else if (historyDeliveredOnly) titleText += ' 已完成配送';
+  document.getElementById('hPageTitle').textContent = titleText;
+
+  let history = getFilteredHistory().filter(h=>h.date===date);
+  // 未配送模式：只显示未完成的记录
+  if (historyUndeliveredOnly) history = history.filter(h => !h.delivered);
+  // 已配送模式：只显示已配送的记录
+  if (historyDeliveredOnly) history = history.filter(h => h.delivered);
+  const byCust = {};
+  history.forEach(h => {
+    if (!byCust[h.customer]) byCust[h.customer] = [];
+    byCust[h.customer].push(h);
+  });
+
+  let html = '';
+  Object.keys(byCust).sort().forEach(cust => {
+    const records = byCust[cust];
+    const totalRows = records.reduce((s,r)=>s+r.rows.length,0);
+    html += '<div class="h-cust-card">' +
+      '<div class="h-cust-header" onclick="toggleHCust(this)">' +
+      '<div><div class="h-cust-name">' + cust + '</div><div class="h-cust-info">' + records.length + ' 单 · ' + totalRows + ' 条</div></div>' +
+      '<div class="h-arrow">›</div></div>' +
+      '<div class="h-cust-detail">' + buildHistoryDetail(records) + '</div></div>';
+  });
+  document.getElementById('hCustomerList').innerHTML = html;
+  // 恢复之前展开的客户卡片
+  if (window._expandedCustomers && window._expandedCustomers.length > 0) {
+    setTimeout(function() {
+      document.querySelectorAll('#hCustomerList .h-cust-card').forEach(function(card) {
+        var nameEl = card.querySelector('.h-cust-name');
+        if (nameEl && window._expandedCustomers.indexOf(nameEl.textContent.trim()) !== -1) {
+          var header = card.querySelector('.h-cust-header');
+          if (header && !header.classList.contains('expanded')) {
+            header.classList.add('expanded');
+            var detail = header.nextElementSibling;
+            if (detail) detail.classList.add('show');
+          }
+        }
+      });
+    }, 0);
+  }
+}
+
+function buildHistoryDetail(records) {
+  let html = '';
+  records.forEach(record => {
+    html += '<div class="h-record">';
+    // 按钮行
+    html += '<div class="h-record-btns" style="justify-content:center;">';
+    if (historyUndeliveredOnly) {
+      html += '<button class="h-record-done" style="background:#EAF5EA;color:#52c41a;border:1px solid #52c41a;border-radius:3px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-right:4px;" onclick="toggleRecordDelivered(' + record.id + ', event)">完成</button>';
+    } else if (historyDeliveredOnly) {
+      html += '<button class="h-record-done" style="background:#52c41a;color:#fff;border:1px solid #52c41a;border-radius:3px;padding:4px 12px;font-size:12px;font-weight:600;margin-right:4px;opacity:0.8;cursor:default;" disabled>✅ 完成配送</button>';
+    } else {
+      if (record.delivered) {
+        html += '<button class="h-record-done" style="background:#52c41a;color:#fff;border:1px solid #52c41a;border-radius:3px;padding:4px 12px;font-size:12px;font-weight:600;margin-right:4px;opacity:0.8;cursor:default;" disabled>✅ 完成配送</button>';
+      } else {
+        html += '<button class="h-record-done" style="background:#EAF5EA;color:#52c41a;border:1px solid #52c41a;border-radius:3px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-right:4px;" onclick="toggleRecordDelivered(' + record.id + ', event)">完成</button>';
+      }
+    }
+    html += '<button class="h-record-remark" style="background:#fff;color:#e67e22;border:1px solid #e67e22;border-radius:3px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;margin-right:4px;" onclick="openRemarkModal(' + record.id + ')">备注款号</button>';
+    html += '<button class="h-record-edit" onclick="editHistoryRecord(' + record.id + ')">修改</button>';
+    html += '<button class="h-record-del" onclick="deleteHistoryRecord(' + record.id + ')">删除</button>';
+    html += '</div>';
+    // 下单编号在按钮下面，居中，大字体
+    if (record.orderNo) {
+      html += '<div style="text-align:center;margin:6px 0;"><span style="font-size:13px;color:#666;">下单编号：</span><span style="font-size:18px;font-weight:700;color:#1677ff;">' + escapeHtml(record.orderNo) + '</span></div>';
+    } else if (record.time) {
+      html += '<div style="text-align:center;margin:6px 0;"><span style="font-size:13px;color:#666;">下单编号：</span><span style="font-size:18px;font-weight:700;color:#1677ff;">' + record.time + '</span></div>';
+    }
+    // 表格表头
+    html += '<div style="display:flex;padding:4px 0;margin-top:6px;border-bottom:1px solid #ddd;font-size:11px;color:#999;font-weight:500;">' +
+      '<div style="flex:1;text-align:center;">顺序</div>' +
+      '<div style="flex:1;text-align:center;">色号</div>' +
+      '<div style="flex:1;text-align:center;">工厂米数</div>' +
+      '<div style="flex:1;text-align:center;">换算米数</div></div>';
+    record.rows.forEach((r, j) => {
+      const conv = calcConverted(r.origMeters, r.rate);
+      html += '<div style="display:flex;padding:3px 0;font-size:13px;color:#555;">' +
+        '<div style="flex:1;text-align:center;color:#888;">' + (j+1) + '</div>' +
+        '<div style="flex:1;text-align:center;font-weight:500;">' + (r.colorCode||'-') + '</div>' +
+        '<div style="flex:1;text-align:center;color:#ff4d4f;font-weight:600;">' + r.origMeters + '</div>' +
+        '<div style="flex:1;text-align:center;color:#333;font-weight:600;">' + conv + '</div></div>';
+    });
+    // 客户名称 + 客户款号 + 条数放底部
+    if (record.remark || record.customer) {
+      html += '<div style="margin-top:6px;padding-top:4px;border-top:1px dashed #ddd;font-size:12px;color:#e67e22;display:flex;justify-content:space-between;align-items:center;">' +
+        '<span>客户名称：' + escapeHtml(record.customer||'') + '</span>' +
+        (record.remark ? '<span>客户款号：' + escapeHtml(record.remark) + '</span>' : '<span></span>') +
+        '<span>条数数量：' + record.rows.length + '条</span></div>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function toggleHCust(el) {
+  const card = el.parentElement;
+  const detail = card.querySelector('.h-cust-detail');
+  if (el.classList.contains('expanded')) { el.classList.remove('expanded'); detail.classList.remove('show'); }
+  else { el.classList.add('expanded'); detail.classList.add('show'); }
+  // 记录当前展开的客户
+  saveExpandedCustomers();
+}
+function saveExpandedCustomers() {
+  window._expandedCustomers = [];
+  document.querySelectorAll('#hCustomerList .h-cust-header.expanded').forEach(function(header) {
+    var nameEl = header.querySelector('.h-cust-name');
+    if (nameEl) window._expandedCustomers.push(nameEl.textContent.trim());
+  });
+}
+
+async function deleteHistoryRecord(id) {
+  if (!confirm('确定要删除这条记录吗？')) return;
+  let history = getHistory();
+  history = history.filter(h => h.id !== id);
+  localStorage.setItem('meterConverterHistory', JSON.stringify(history));
+  await ossSaveHistory(history);
+  showToast('已删除');
+  saveExpandedCustomers();
+  const dateTitle = document.getElementById('hPageTitle').textContent;
+  const date = dateTitle.split(' ')[0];
+  openHistoryDate(date);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function openRemarkModal(id) {
+  const history = getHistory();
+  const record = history.find(h => h.id === id);
+  if (!record) { showToast('未找到该记录'); return; }
+  // 移除已有弹窗
+  const old = document.getElementById('remarkModalOverlay');
+  if (old) old.remove();
+  // 创建弹窗
+  const overlay = document.createElement('div');
+  overlay.id = 'remarkModalOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:#F5FBF5;border-radius:3px;padding:20px 18px;width:85%;max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,0.18);">' +
+    '<div style="font-size:16px;font-weight:700;margin-bottom:12px;color:#333;">📝 备注款号</div>' +
+    '<input id="remarkInput" type="text" value="' + escapeHtml(record.remark || '') + '" placeholder="请输入备注款号" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #ddd;border-radius:3px;font-size:14px;outline:none;" />' +
+    '<div style="display:flex;gap:10px;margin-top:14px;">' +
+    '<button id="remarkCancelBtn" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:3px;background:#f5f5f5;font-size:14px;font-weight:600;cursor:pointer;color:#666;">取消</button>' +
+    '<button id="remarkSaveBtn" style="flex:1;padding:10px;border:none;border-radius:3px;background:#e67e22;font-size:14px;font-weight:600;cursor:pointer;color:#fff;">保存</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  // 聚焦输入框
+  setTimeout(function(){ document.getElementById('remarkInput').focus(); document.getElementById('remarkInput').select(); }, 100);
+  // 绑定事件
+  document.getElementById('remarkCancelBtn').addEventListener('click', function(){ overlay.remove(); });
+  document.getElementById('remarkSaveBtn').addEventListener('click', function(){ saveRemark(id); });
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.remove(); });
+  document.getElementById('remarkInput').addEventListener('keydown', function(e){ if(e.key==='Enter') saveRemark(id); });
+}
+
+async function saveRemark(id) {
+  const input = document.getElementById('remarkInput');
+  if (!input) return;
+  const remark = input.value.trim();
+  let history = getHistory();
+  const record = history.find(h => h.id === id);
+  if (!record) { showToast('未找到该记录'); return; }
+  record.remark = remark;
+  localStorage.setItem('meterConverterHistory', JSON.stringify(history));
+  await ossSaveHistory(history);
+  const overlay = document.getElementById('remarkModalOverlay');
+  if (overlay) overlay.remove();
+  showToast(remark ? '备注已保存' : '备注已清除');
+  // 刷新当前详情
+  saveExpandedCustomers();
+  const dateTitle = document.getElementById('hPageTitle').textContent;
+  const date = dateTitle.split(' ')[0];
+  openHistoryDate(date);
+}
+
+function editHistoryRecord(id) {
+  const history = getHistory();
+  const record = history.find(h => h.id === id);
+  if (!record) { showToast('未找到该记录'); return; }
+  // 恢复主页面数据
+  document.getElementById('globalCustomer').value = record.customer || '';
+  document.getElementById('globalColorCode').value = record.orderNo || '';
+  // 恢复行数据
+  rows = [];
+  idCounter = 0;
+  record.rows.forEach(r => {
+    addRowData(r.origMeters, r.rate, record.customer || '', r.colorCode || '', r.selfCode || '');
+  });
+  // 恢复全局空差率（取第一行的 rate）
+  if (record.rows.length > 0) {
+    document.getElementById('globalRate').value = record.rows[0].rate || 96;
+  }
+  render();
+  saveData_silent();
+  closeHistory();
+  showToast('已恢复，可继续编辑');
+}
+
+function saveData_silent() {
+  const validRows = rows.filter(r => r.origMeters > 0 && r.rate !== '');
+  const customer = document.getElementById('globalCustomer').value.trim();
+  const orderCode = document.getElementById('globalColorCode').value.trim();
+  
+  // === 静默同步数据到共享存储 ===
+  (function() {
+    if (typeof FriendshipSync === 'undefined') return;
+    var syncColors = {};
+    rows.forEach(function(r) {
+      if (r.selfCode && r.origMeters > 0) {
+        syncColors[r.selfCode] = {
+          colorCode: r.selfCode,
+          factoryColor: r.colorCode || '',
+          productCode: orderCode || '',
+          updatedBy: 'v50Tool',
+          updatedAt: new Date().toISOString()
+        };
+      }
+    });
+    if (Object.keys(syncColors).length > 0) {
+      FriendshipSync.syncBatch(null, syncColors, null);
+    }
+  })();
+  
+  const workData = {
+    globalRate: document.getElementById('globalRate').value,
+    globalCustomer: customer,
+    globalColorCode: orderCode,
+    rows: rows,
+    idCounter: idCounter
+  };
+  localStorage.setItem('meterConverterData', JSON.stringify(workData));
+}
+
+function onHistorySearch() {
+  const keyword = document.getElementById('hSearchInput').value.trim().toLowerCase();
+  if (!keyword) {
+    document.getElementById('hPage1').style.display = 'block';
+    document.getElementById('hPage3').style.display = 'none';
+    renderHistoryDateList();
+    return;
+  }
+  const history = getFilteredHistory();
+  const results = [];
+  history.forEach(h => {
+    let match = h.customer.toLowerCase().includes(keyword) || (h.orderNo||'').toLowerCase().includes(keyword);
+    if (!match) match = h.rows.some(r => (r.colorCode||'').toLowerCase().includes(keyword) || (r.selfCode||'').toLowerCase().includes(keyword));
+    if (match) results.push(h);
+  });
+  renderHistorySearchResults(keyword, results);
+}
+
+function renderHistorySearchResults(keyword, results) {
+  document.getElementById('hPage1').style.display = 'none';
+  document.getElementById('hPage2').style.display = 'none';
+  document.getElementById('hPage3').style.display = 'block';
+  document.getElementById('hSearchTitle').textContent = '搜索 "' + keyword + '" (' + results.length + ' 条)';
+  if (results.length === 0) {
+    document.getElementById('hSearchResults').innerHTML = '';
+    document.getElementById('hNoResult3').style.display = 'block';
+    return;
+  }
+  document.getElementById('hNoResult3').style.display = 'none';
+  let html = '';
+  results.forEach(item => {
+    html += '<div class="h-record" style="background:#F5FBF5;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">' +
+      '<div class="h-record-header">' +
+      '<div style="font-size:15px;font-weight:600;color:#1677ff;">' + hl2(item.customer,keyword) + '</div>' +
+      '<div class="h-record-btns">' +
+      '<button class="h-record-edit" onclick="editHistoryRecord(' + item.id + ')">修改</button>' +
+      '<div style="font-size:12px;color:#999;">' + item.date + ' ' + (item.time||'') + '</div></div></div>' +
+      (item.orderNo ? '<div style="text-align:center;margin:6px 0;"><span style="font-size:13px;color:#666;">下单编号：</span><span style="font-size:18px;font-weight:700;color:#1677ff;">' + hl2(item.orderNo,keyword) + '</span></div>' : '');
+    // 表格表头
+    html += '<div style="display:flex;padding:4px 0;margin-top:6px;border-bottom:1px solid #ddd;font-size:11px;color:#999;font-weight:500;">' +
+      '<div style="flex:1;text-align:center;">顺序</div>' +
+      '<div style="flex:1;text-align:center;">色号</div>' +
+      '<div style="flex:1;text-align:center;">工厂米数</div>' +
+      '<div style="flex:1;text-align:center;">换算米数</div></div>';
+    item.rows.forEach((r, j) => {
+      const conv = calcConverted(r.origMeters, r.rate);
+      html += '<div style="display:flex;padding:3px 0;font-size:13px;color:#555;">' +
+        '<div style="flex:1;text-align:center;color:#888;">' + (j+1) + '</div>' +
+        '<div style="flex:1;text-align:center;font-weight:500;">' + hl2(r.colorCode||'-',keyword) + '</div>' +
+        '<div style="flex:1;text-align:center;color:#ff4d4f;font-weight:600;">' + r.origMeters + '</div>' +
+        '<div style="flex:1;text-align:center;color:#333;font-weight:600;">' + conv + '</div></div>';
+    });
+    // 客户名称 + 客户款号 + 条数放底部
+    html += '<div style="margin-top:6px;padding-top:4px;border-top:1px dashed #ddd;font-size:12px;color:#e67e22;display:flex;justify-content:space-between;align-items:center;">' +
+      '<span>客户名称：' + escapeHtml(item.customer||'') + '</span>' +
+      (item.remark ? '<span>客户款号：' + escapeHtml(item.remark) + '</span>' : '<span></span>') +
+      '<span>条数数量：' + item.rows.length + '条</span></div>';
+    html += '</div>';
+  });
+  document.getElementById('hSearchResults').innerHTML = html;
+}
+
+function hl2(text, keyword) {
+  if (!keyword || !text) return text || '';
+  const idx = text.toLowerCase().indexOf(keyword.toLowerCase());
+  if (idx === -1) return text;
+  return text.substring(0,idx) + '<span class="highlight">' + text.substring(idx, idx+keyword.length) + '</span>' + text.substring(idx+keyword.length);
+}
+
+function hGoBack() {
+  document.getElementById('hPage2').style.display = 'none';
+  document.getElementById('hPage1').style.display = 'block';
+}
+function hGoBackFromSearch() {
+  document.getElementById('hPage3').style.display = 'none';
+  document.getElementById('hSearchInput').value = '';
+  document.getElementById('hPage1').style.display = 'block';
+}
+
+// ===== 工厂报米数 =====
+let _factoryRowId = 0;
+
+// 工厂名称联想
+function getFactoryNames() {
+  try {
+    const data = localStorage.getItem('factoryNames');
+    return data ? JSON.parse(data) : [];
+  } catch(e) { return []; }
+}
+
+function saveFactoryName(name) {
+  if (!name) return;
+  let names = getFactoryNames();
+  if (names.indexOf(name) === -1) {
+    names.push(name);
+    localStorage.setItem('factoryNames', JSON.stringify(names));
+  }
+}
+
+function onFactoryNameInput() {
+  const input = document.getElementById('fFactoryName');
+  const list = document.getElementById('fFactoryNameList');
+  const val = input.value.trim();
+  if (!val) { list.style.display = 'none'; return; }
+  const names = getFactoryNames();
+  const matches = names.filter(n => n.indexOf(val) !== -1);
+  if (matches.length === 0) { list.style.display = 'none'; return; }
+  let html = '';
+  matches.forEach(function(n) {
+    html += '<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;" onmousedown="selectFactoryName(\'' + n.replace(/'/g, "\\'") + '\')">' + n + '</div>';
+  });
+  list.innerHTML = html;
+  list.style.display = 'block';
+}
+
+function selectFactoryName(name) {
+  document.getElementById('fFactoryName').value = name;
+  document.getElementById('fFactoryNameList').style.display = 'none';
+}
+
+// 点击外部关闭联想列表
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#fFactoryName') && !e.target.closest('#fFactoryNameList')) {
+    var list = document.getElementById('fFactoryNameList');
+    if (list) list.style.display = 'none';
+  }
+});
+
+function openFactory() {
+  document.getElementById('factoryPage').style.display = 'block';
+  document.getElementById('mainPage').style.display = 'none';
+  // 自动填充日期
+  const now = new Date();
+  const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  document.getElementById('fFactoryDate').textContent = dateStr;
+  document.getElementById('fFactoryName').value = '';
+  document.getElementById('fFactoryNo').value = '';
+  _factoryRowId = 0;
+  document.getElementById('fFactoryRows').innerHTML = '';
+  addFactoryRow(); // 默认添加一行
+  loadFactoryHistory();
+}
+
+function closeFactory() {
+  document.getElementById('factoryPage').style.display = 'none';
+  document.getElementById('mainPage').style.display = 'block';
+}
+
+function getFactoryUnit() {
+  var radios = document.getElementsByName('fUnit');
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) return radios[i].value;
+  }
+  return '米';
+}
+
+function onFactoryUnitChange() {
+  var unit = getFactoryUnit();
+  var allRows = document.querySelectorAll('#fFactoryRows > div');
+  for (var i = 0; i < allRows.length; i++) {
+    var suffix = allRows[i].querySelector('.f-unit-label');
+    if (suffix) suffix.textContent = unit;
+    var qtyInput = allRows[i].querySelector('input[data-field="quantity"]');
+    if (qtyInput) qtyInput.placeholder = (unit === '条') ? '请报数量' : ('0 ' + unit);
+  }
+}
+
+
+// 自动匹配工厂色号
+
+function autoFillColorAlias(rowElement) {
+  var selfCodeInput = rowElement.querySelector('input[data-field="selfCode"]');
+  var colorCodeInput = rowElement.querySelector('input[data-field="colorCode"]');
+  if (!selfCodeInput || !colorCodeInput) return;
+  
+  // 清除之前的提示面板
+  var oldPanel = rowElement.querySelector('.color-helper-panel');
+  if (oldPanel) oldPanel.remove();
+  
+  var selfCode = selfCodeInput.value.trim();
+  if (!selfCode) return;
+  
+  // 获取产品编号
+  var productCode = localStorage.getItem('currentProductCode') || '';
+  if (!productCode) return;
+  
+  // 合并自定义映射
+  var customMap = loadCustomColorMap();
+  var baseColors = COLOR_ALIAS_MAP[productCode] || {};
+  var productColors = Object.assign({}, baseColors, customMap[productCode] || {});
+  
+  // 1. 先精确匹配
+  var alias = productColors[selfCode];
+  
+  // 2. 没找到就模糊匹配
+  if (!alias) {
+    for (var key in productColors) {
+      if (key.indexOf(selfCode) === 0 || selfCode.indexOf(key) === 0) {
+        alias = productColors[key];
+        break;
+      }
+    }
+  }
+  
+  if (alias) {
+    colorCodeInput.value = alias;
+    colorCodeInput.style.background = '#e6f7ff';
+    setTimeout(function() { colorCodeInput.style.background = '#fff'; }, 1000);
+  } else {
+    // 没找到匹配，显示色号辅助面板
+    showColorHelperPanel(rowElement, selfCodeInput, colorCodeInput, selfCode, productCode);
+  }
+}
+
+// 加载自定义色号映射
+function loadCustomColorMap() {
+  try {
+    var data = localStorage.getItem('customColorAliasMap');
+    return data ? JSON.parse(data) : {};
+  } catch(e) { return {}; }
+}
+
+// 保存自定义色号映射
+function saveCustomColorMap(map) {
+  localStorage.setItem('customColorAliasMap', JSON.stringify(map));
+}
+
+// 添加自定义色号映射
+function addCustomColorAlias(productCode, selfCode, factoryColor) {
+  var map = loadCustomColorMap();
+  if (!map[productCode]) map[productCode] = {};
+  map[productCode][selfCode] = factoryColor;
+  saveCustomColorMap(map);
+  // 同步更新内存中的 COLOR_ALIAS_MAP
+  if (!COLOR_ALIAS_MAP[productCode]) COLOR_ALIAS_MAP[productCode] = {};
+  COLOR_ALIAS_MAP[productCode][selfCode] = factoryColor;
+}
+
+// 显示色号辅助面板
+function showColorHelperPanel(rowElement, selfCodeInput, colorCodeInput, selfCode, productCode) {
+  var panel = document.createElement('div');
+  panel.className = 'color-helper-panel';
+  panel.style.cssText = 'width:100%;margin-top:4px;padding:8px 10px;background:#fff8f0;border:1px solid #f0d0a0;border-radius:8px;font-size:12px;color:#8b5e3c;';
+  
+  panel.innerHTML = 
+    '<div style="margin-bottom:6px;font-weight:600;">未找到「' + selfCode + '」的工厂色号</div>' +
+    '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">' +
+      '<input type="text" id="manualColorInput" placeholder="输入工厂色号" style="flex:1;padding:5px 8px;border:1px solid #d4b896;border-radius:5px;font-size:12px;outline:none;">' +
+      '<button onclick="saveManualColor(this)" data-selfcode="' + selfCode + '" data-product="' + productCode + '" style="padding:5px 10px;background:#f0a060;color:#fff;border:none;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;">保存</button>' +
+    '</div>' +
+    '<div style="display:flex;gap:6px;align-items:center;">' +
+      '<button id="btnStartPaste" onclick="activatePasteMode(this)" data-selfcode="' + selfCode + '" data-product="' + productCode + '" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:5px 8px;background:#fff;border:1px dashed #d4b896;border-radius:5px;font-size:11px;cursor:pointer;color:#666;">' +
+        '<span>📷</span><span>截图后粘贴(Ctrl+V)</span>' +
+      '</button>' +
+      '<button onclick="fillColorDirect(this)" data-selfcode="' + selfCode + '" style="padding:5px 10px;background:#eee;color:#666;border:none;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;">暂不填</button>' +
+    '</div>' +
+    '<div id="ocrProgress" style="display:none;margin-top:6px;font-size:11px;color:#999;"></div>';
+  
+  // 插入面板到行下方
+  rowElement.appendChild(panel);
+  
+  // 手动输入的回车事件
+  var manualInput = panel.querySelector('#manualColorInput');
+  manualInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      panel.querySelector('button[onclick*="saveManualColor"]').click();
+    }
+  });
+  manualInput.focus();
+
+  // 存储当前活跃的panel引用，供粘贴回调使用
+  panel._selfCode = selfCode;
+  panel._productCode = productCode;
+  window._activeColorPanel = panel;
+}
+
+// 激活粘贴模式
+function activatePasteMode(btn) {
+  btn.innerHTML = '<span>📋</span><span>等待粘贴中... (按Ctrl+V)</span>';
+  btn.style.background = '#e8f5e9';
+  btn.style.borderColor = '#4caf50';
+  btn.style.color = '#4caf50';
+  btn.disabled = true;
+
+  // 添加一次性粘贴监听
+  function onPaste(e) {
+    e.preventDefault();
+    var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    var imageFile = null;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        imageFile = items[i].getAsFile();
+        break;
+      }
+    }
+    if (!imageFile) {
+      showToast('未检测到图片，请先复制截图');
+      return;
+    }
+
+    // 恢复按钮
+    btn.innerHTML = '<span>⏳</span><span>识别中...</span>';
+    btn.style.background = '#fff3e0';
+    btn.style.borderColor = '#ff9800';
+    btn.style.color = '#ff9800';
+
+    var panel = window._activeColorPanel;
+    var selfCode = btn.getAttribute('data-selfcode');
+    var productCode = btn.getAttribute('data-product');
+    var progressDiv = panel.querySelector('#ocrProgress');
+    progressDiv.style.display = 'block';
+    progressDiv.innerHTML = '⏳ 正在处理图片...';
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        progressDiv.innerHTML = '⏳ 正在预处理图片...';
+        var canvas = document.createElement('canvas');
+        var scale = Math.max(2, 1500 / Math.max(img.width, img.height));
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var data = imageData.data;
+        for (var j = 0; j < data.length; j += 4) {
+          var gray = data[j] * 0.299 + data[j+1] * 0.587 + data[j+2] * 0.114;
+          gray = gray > 128 ? Math.min(255, gray * 1.2) : gray * 0.8;
+          data[j] = data[j+1] = data[j+2] = gray;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        var processedUrl = canvas.toDataURL('image/png');
+
+        if (typeof Tesseract === 'undefined') {
+          progressDiv.innerHTML = '⏳ 正在下载识别引擎(首次约10秒)...';
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+          script.onload = function() { runOCR(processedUrl, progressDiv, panel, selfCode, productCode); };
+          script.onerror = function() { progressDiv.innerHTML = '❌ 加载识别引擎失败，请手动输入'; };
+          document.head.appendChild(script);
+        } else {
+          runOCR(processedUrl, progressDiv, panel, selfCode, productCode);
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(imageFile);
+
+    // 移除监听
+    document.removeEventListener('paste', onPaste);
+  }
+
+  document.addEventListener('paste', onPaste);
+}
+
+// 保存手动输入的色号
+function saveManualColor(btn) {
+  var selfCode = btn.getAttribute('data-selfcode');
+  var productCode = btn.getAttribute('data-product');
+  var panel = btn.closest('.color-helper-panel');
+  var manualInput = panel.querySelector('#manualColorInput');
+  var factoryColor = manualInput.value.trim();
+  
+  if (!factoryColor) {
+    showToast('请输入工厂色号');
+    return;
+  }
+  
+  // 填入工厂色号
+  var rowElement = btn.closest('[id^="fRow_"]');
+  var colorCodeInput = rowElement.querySelector('input[data-field="colorCode"]');
+  colorCodeInput.value = factoryColor;
+  colorCodeInput.style.background = '#fff3e0';
+  setTimeout(function() { colorCodeInput.style.background = '#fff'; }, 1000);
+  
+  // 保存到自定义映射
+  addCustomColorAlias(productCode, selfCode, factoryColor);
+  
+  // 移除面板
+  panel.remove();
+  showToast('已保存映射：' + selfCode + ' → ' + factoryColor);
+}
+
+// 直接填写不保存
+function fillColorDirect(btn) {
+  var panel = btn.closest('.color-helper-panel');
+  var manualInput = panel.querySelector('#manualColorInput');
+  var rowElement = btn.closest('[id^="fRow_"]');
+  var colorCodeInput = rowElement.querySelector('input[data-field="colorCode"]');
+  
+  if (manualInput.value.trim()) {
+    colorCodeInput.value = manualInput.value.trim();
+  }
+  panel.remove();
+}
+
+// 处理截图上传
+function handleColorScreenshot(input) {
+  var file = input.files[0];
+  if (!file) return;
+  
+  var selfCode = input.getAttribute('data-selfcode');
+  var productCode = input.getAttribute('data-product');
+  var panel = input.closest('.color-helper-panel');
+  var progressDiv = panel.querySelector('#ocrProgress');
+  
+  // 显示进度
+  progressDiv.style.display = 'block';
+  progressDiv.innerHTML = '⏳ 正在加载识别引擎...';
+  
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    // 预处理图片
+    var img = new Image();
+    img.onload = function() {
+      progressDiv.innerHTML = '⏳ 正在预处理图片...';
+      
+      var canvas = document.createElement('canvas');
+      // 放大图片提高识别率
+      var scale = Math.max(2, 1500 / Math.max(img.width, img.height));
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      var ctx = canvas.getContext('2d');
+      
+      // 放大绘制
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // 转灰度+增强对比度
+      var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var data = imageData.data;
+      for (var i = 0; i < data.length; i += 4) {
+        var gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
+        // 增强对比度
+        gray = gray > 128 ? Math.min(255, gray * 1.2) : gray * 0.8;
+        data[i] = data[i+1] = data[i+2] = gray;
+      }
+      ctx.putImageData(imageData, 0, 0);
+      
+      var processedUrl = canvas.toDataURL('image/png');
+      
+      // 检查 Tesseract 是否已加载
+      if (typeof Tesseract === 'undefined') {
+        progressDiv.innerHTML = '⏳ 正在下载识别引擎(首次约10秒)...';
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        script.onload = function() { runOCR(processedUrl, progressDiv, panel, selfCode, productCode); };
+        script.onerror = function() {
+          progressDiv.innerHTML = '❌ 加载识别引擎失败，请手动输入';
+        };
+        document.head.appendChild(script);
+      } else {
+        runOCR(processedUrl, progressDiv, panel, selfCode, productCode);
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// 执行OCR识别
+function runOCR(imageUrl, progressDiv, panel, selfCode, productCode) {
+  progressDiv.innerHTML = '⏳ 正在识别文字...';
+  
+  Tesseract.recognize(imageUrl, 'chi_sim+eng', {
+    logger: function(m) {
+      if (m.status === 'recognizing text') {
+        var pct = Math.round(m.progress * 100);
+        progressDiv.innerHTML = '⏳ 识别中 ' + pct + '%...';
+      }
+    }
+  }).then(function(result) {
+    var text = result.data.text;
+    progressDiv.innerHTML = '📝 识别完成，解析色号中...';
+    
+    // 解析识别结果
+    var mappings = parseColorMappings(text, selfCode);
+    
+    if (mappings.length > 0) {
+      var html = '<div style="margin-bottom:4px;color:#4caf50;">✅ 找到以下映射：</div>';
+      mappings.forEach(function(m, idx) {
+        html += '<div style="display:flex;align-items:center;gap:4px;margin:2px 0;">' +
+          '<span style="min-width:50px;">' + m.self + ' → ' + m.factory + '</span>' +
+          '<input type="checkbox" checked data-idx="' + idx + '" data-self="' + m.self + '" data-factory="' + m.factory + '">' +
+        '</div>';
+      });
+      html += '<button onclick="confirmOCRSave(this)" data-product="' + productCode + '" style="margin-top:4px;padding:4px 12px;background:#4caf50;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;">确认保存</button>';
+      progressDiv.innerHTML = html;
+      
+      // 把mappings存到progressDiv上
+      progressDiv._mappings = mappings;
+    } else {
+      progressDiv.innerHTML = '⚠️ 未识别到有效色号映射，请手动输入<br><span style="font-size:10px;color:#aaa;">识别文字: ' + text.substring(0, 80) + '...</span>';
+    }
+  }).catch(function(err) {
+    progressDiv.innerHTML = '❌ 识别失败: ' + err.message + '，请手动输入';
+  });
+}
+
+// 解析OCR文字提取色号映射
+function parseColorMappings(text, targetSelfCode) {
+  var lines = text.split(/\n/);
+  var mappings = [];
+  
+  // 尝试匹配模式: "自编色号 工厂色号" 或 "编号 ... 颜色别名"
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    
+    // 模式1: "数字#(文字) 数字/字母"
+    var match = line.match(/(\d+#[^\s]*)\s+(\S+)/);
+    if (match) {
+      mappings.push({ self: match[1], factory: match[2] });
+      continue;
+    }
+    
+    // 模式2: 表格中的行 编号 | 颜色 | 颜色别名
+    var parts = line.split(/[|\t]/);
+    if (parts.length >= 2) {
+      var selfPart = parts.length >= 3 ? parts[1].trim() : parts[0].trim();
+      var factoryPart = parts[parts.length - 1].trim();
+      if (selfPart && factoryPart && selfPart.match(/\d/)) {
+        mappings.push({ self: selfPart, factory: factoryPart });
+      }
+    }
+  }
+  
+  // 如果没找到通用模式，只匹配目标色号
+  if (mappings.length === 0) {
+    // 在文本中搜索目标色号附近的数字
+    var idx = text.indexOf(targetSelfCode);
+    if (idx !== -1) {
+      var context = text.substring(idx, idx + 50);
+      var numMatch = context.match(/\d+#[^\s]*\s+(\S+)/);
+      if (numMatch) {
+        mappings.push({ self: targetSelfCode, factory: numMatch[1] });
+      }
+    }
+  }
+  
+  return mappings;
+}
+
+// 确认保存OCR识别的映射
+function confirmOCRSave(btn) {
+  var productCode = btn.getAttribute('data-product');
+  var progressDiv = btn.closest('#ocrProgress');
+  var panel = btn.closest('.color-helper-panel');
+  var checkboxes = progressDiv.querySelectorAll('input[type="checkbox"]:checked');
+  
+  var saved = 0;
+  checkboxes.forEach(function(cb) {
+    var self = cb.getAttribute('data-self');
+    var factory = cb.getAttribute('data-factory');
+    addCustomColorAlias(productCode, self, factory);
+    saved++;
+  });
+  
+  // 找到目标色号的映射填入
+  var rowElement = btn.closest('[id^="fRow_"]');
+  var selfCodeInput = rowElement.querySelector('input[data-field="selfCode"]');
+  var colorCodeInput = rowElement.querySelector('input[data-field="colorCode"]');
+  var targetSelf = selfCodeInput.value.trim();
+  
+  for (var i = 0; i < checkboxes.length; i++) {
+    if (checkboxes[i].getAttribute('data-self') === targetSelf) {
+      colorCodeInput.value = checkboxes[i].getAttribute('data-factory');
+      colorCodeInput.style.background = '#e8f5e9';
+      setTimeout(function() { colorCodeInput.style.background = '#fff'; }, 1000);
+      break;
+    }
+  }
+  
+  panel.remove();
+  showToast('已保存 ' + saved + ' 条色号映射');
+}
+
+function addFactoryRow() {
+  _factoryRowId++;
+  const rid = _factoryRowId;
+  const rowsDiv = document.getElementById('fFactoryRows');
+  const row = document.createElement('div');
+  row.id = 'fRow_' + rid;
+  var unit = getFactoryUnit();
+  row.style.cssText = 'display:flex;padding:5px 0;align-items:center;gap:10px;';
+  row.innerHTML =
+    '<input type="text" data-field="selfCode" placeholder="" style="width:72px;padding:7px 6px;border:1px solid #d4b896;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;flex-shrink:0;background:#f0e2d0;color:#8b5e3c;font-weight:700;text-align:center;transition:border-color .2s,box-shadow .2s;">' +
+    '<input type="number" data-field="quantity" placeholder="' + (unit === '条' ? '请报数量' : ('0 ' + unit)) + '" style="flex:1;padding:7px 6px;border:1px solid #e8e4de;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;-moz-appearance:textfield;-webkit-appearance:none;text-align:center;min-width:0;background:#fff;color:#444;transition:border-color .2s,box-shadow .2s;">' +
+    '<input type="text" data-field="colorCode" placeholder="" style="flex:1;padding:7px 6px;border:1px solid #e8e4de;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;text-align:center;min-width:0;background:#fff;color:#444;transition:border-color .2s,box-shadow .2s;">' +
+    '<input type="text" data-field="note" placeholder="请报数量" style="flex:1;padding:7px 6px;border:1px solid #e8e4de;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;text-align:center;min-width:0;background:#fff;color:#444;transition:border-color .2s,box-shadow .2s;">' +
+    '<button onclick="removeFactoryRow(' + rid + ')" style="width:24px;padding:4px;background:transparent;color:#ccc;border:none;font-size:16px;cursor:pointer;flex-shrink:0;border-radius:50%;transition:color .2s;">✕</button>';
+  rowsDiv.appendChild(row);
+  // 给自编色号输入框添加自动匹配事件
+  var selfCodeInput = row.querySelector('input[data-field="selfCode"]');
+  if (selfCodeInput) {
+    selfCodeInput.addEventListener('blur', function() { autoFillColorAlias(row); });
+    selfCodeInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { autoFillColorAlias(row); }
+    });
+  }
+  // 去掉数字输入框的上下箭头
+  var qtyInput = row.querySelector('input[data-field="quantity"]');
+  qtyInput.style.cssText += '::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}';
+  // 回车跳下一行同列
+  var inputs = row.querySelectorAll('input');
+  inputs.forEach(function(inp, idx) {
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var rowsDiv = document.getElementById('fFactoryRows');
+        var allRows = rowsDiv.children;
+        var myRow = inp.closest('[id^="fRow_"]');
+        var rowIdx = Array.prototype.indexOf.call(allRows, myRow);
+        // 如果已经是最后一行，先新增一行
+        if (rowIdx >= allRows.length - 1) {
+          addFactoryRow();
+          allRows = rowsDiv.children;
+        }
+        // 跳到下一行同列
+        var nextRow = allRows[rowIdx + 1];
+        if (nextRow) {
+          var nextInputs = nextRow.querySelectorAll('input');
+          if (nextInputs[idx]) {
+            nextInputs[idx].focus();
+            nextInputs[idx].select();
+          }
+        }
+      }
+    });
+  });
+}
+
+function removeFactoryRow(rid) {
+  const row = document.getElementById('fRow_' + rid);
+  if (row) row.remove();
+  // 如果全部删除，自动添加一行
+  if (document.getElementById('fFactoryRows').children.length === 0) {
+    addFactoryRow();
+  }
+}
+
+function getFactoryRows() {
+  const unit = getFactoryUnit();
+  const rows = [];
+  document.querySelectorAll('#fFactoryRows > div').forEach(function(rowEl) {
+    const inputs = rowEl.querySelectorAll('input');
+    const selfCode = inputs[0].value.trim();
+    const qtyNum = inputs[1].value.trim();
+    const colorCode = inputs[2].value.trim();
+    const note = inputs[3].value.trim();
+    const quantity = qtyNum ? qtyNum + unit : '';
+    if (selfCode || colorCode || qtyNum) {
+      rows.push({ selfCode: selfCode, colorCode: colorCode, quantity: quantity, note: note });
+    }
+  });
+  return rows;
+}
+
+function saveFactoryReport() {
+  const factoryName = document.getElementById('fFactoryName').value.trim();
+  const factoryNo = document.getElementById('fFactoryNo').value.trim();
+  const rows = getFactoryRows();
+  if (!factoryNo) { showToast('请填写工厂编号'); return; }
+  if (rows.length === 0) { showToast('请至少填写一行色号和数量'); return; }
+
+  const now = new Date();
+  const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  const report = {
+    id: Date.now(),
+    date: dateStr,
+    time: timeStr,
+    factoryName: factoryName,
+    factoryNo: factoryNo,
+    productCode: localStorage.getItem('currentProductCode') || '',
+    customer: (document.getElementById('fCustomerName') || {}).value || '',
+    colorCard: (document.getElementById('fColorCard') || {}).value || '',
+    rows: rows
+  };
+
+  // 保存工厂名称到联想库
+  if (factoryName) saveFactoryName(factoryName);
+
+  // 保存到 localStorage
+  let history = getFactoryHistory();
+  history.unshift(report);
+  localStorage.setItem('meterConverterFactoryHistory', JSON.stringify(history));
+
+  // 同步到 OSS
+  ossSaveFactoryHistory(history);
+
+  showToast('已保存');
+  document.getElementById('fFactoryName').value = '';
+  document.getElementById('fFactoryNo').value = '';
+  // 清空客户名称
+  var custEl = document.getElementById('fCustomerName');
+  if (custEl) custEl.value = '';
+  // 清空色卡编号
+  var ccEl = document.getElementById('fColorCard');
+  if (ccEl) ccEl.value = '';
+  var ccDisp = document.getElementById('productCodeDisplay');
+  if (ccDisp) ccDisp.style.display = 'none';
+  localStorage.removeItem('currentProductCode');
+  _factoryRowId = 0;
+  document.getElementById('fFactoryRows').innerHTML = '';
+  addFactoryRow();
+  loadFactoryHistory();
+}
+
+function getFactoryHistory() {
+  try {
+    const data = localStorage.getItem('meterConverterFactoryHistory');
+    return data ? JSON.parse(data) : [];
+  } catch(e) { return []; }
+}
+
+function ossSaveFactoryHistory(history) {
+  if (!ossClient) { initOSS(); }
+  try {
+    const str = JSON.stringify(history);
+    ossClient.put('youyi-tool-factory-history.json', new Blob([str], {type:'application/json'})).then(function(){ cloudSynced = true; }).catch(function(){});
+  } catch(e){}
+}
+
+function loadFactoryHistory() {
+  let history = getFactoryHistory();
+  const container = document.getElementById('fFactoryHistory');
+  // 应用搜索和日期过滤
+  const searchEl = document.getElementById('fhSearchInput');
+  const fromEl = document.getElementById('fhDateFrom');
+  const toEl = document.getElementById('fhDateTo');
+  if (searchEl) {
+    const kw = searchEl.value.trim().toLowerCase();
+    const from = fromEl ? fromEl.value : '';
+    const to = toEl ? toEl.value : '';
+    if (kw) {
+      history = history.filter(function(r) {
+        return (r.customer||'').toLowerCase().indexOf(kw) !== -1 ||
+               (r.colorCard||'').toLowerCase().indexOf(kw) !== -1 ||
+               (r.factoryName||'').toLowerCase().indexOf(kw) !== -1 ||
+               (r.factoryNo||'').toLowerCase().indexOf(kw) !== -1 ||
+               (r.rows||[]).some(function(row) {
+                 return (row.selfCode||'').toLowerCase().indexOf(kw) !== -1 ||
+                        (row.colorCode||'').toLowerCase().indexOf(kw) !== -1 ||
+                        (row.note||'').toLowerCase().indexOf(kw) !== -1;
+               });
+      });
+    }
+    if (from) {
+      history = history.filter(function(r) { return r.date >= from; });
+    }
+    if (to) {
+      history = history.filter(function(r) { return r.date <= to; });
+    }
+  }
+  if (history.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:#999;text-align:center;padding:20px;">没有匹配的记录</div>';
+    return;
+  }
+  let html = '';
+  history.forEach(record => {
+    html += '<div style="background:#F5FBF5;border:1px solid #ddd;border-radius:3px;padding:10px;margin-bottom:8px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    html += '<div><span style="font-size:12px;color:#999;">' + record.date + ' ' + (record.time||'') + '</span></div>';
+    html += '<div style="display:flex;gap:4px;flex-wrap:wrap;"><button onclick="copyFactoryRecord(' + record.id + ')" style="padding:3px 10px;background:#fff;color:#1677ff;border:1px solid #1677ff;border-radius:3px;font-size:11px;cursor:pointer;">复制</button>' +
+      '<button onclick="copyModifyFromHistory(' + record.id + ')" style="padding:3px 10px;background:#fff;color:#fa8c16;border:1px solid #fa8c16;border-radius:3px;font-size:11px;cursor:pointer;">复制改数</button><button onclick="reorderFromHistory(' + record.id + ')" style="padding:3px 10px;background:#fff;color:#722ed1;border:1px solid #722ed1;border-radius:3px;font-size:11px;cursor:pointer;">返单</button>' +
+      '<button onclick="editFactoryRecord(' + record.id + ')" style="padding:3px 10px;background:#fff;color:#722ed1;border:1px solid #722ed1;border-radius:3px;font-size:11px;cursor:pointer;">修改</button>' +
+      '<button onclick="deleteFactoryRecord(' + record.id + ')" style="padding:3px 10px;background:#fff;color:#ff4d4f;border:1px solid #ff4d4f;border-radius:3px;font-size:11px;cursor:pointer;">删除</button></div>';
+    html += '</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#666;margin-bottom:6px;">';
+    html += '<div>[ ';
+    if (record.customer) html += '<span>客户名称：<strong style="color:#333;">' + escapeHtml(record.customer) + '</strong></span>';
+    if (record.customer && record.colorCard) html += '<span style="margin:0 4px;"> · </span>';
+    if (record.colorCard) html += '<span>色卡编号：<strong style="color:#333;">' + escapeHtml(record.colorCard) + '</strong></span>';
+    html += ' ]</div>';
+    html += '<div style="text-align:right;margin-left:12px;">[ 工厂名称：' + (record.factoryName ? '<strong style="color:#333;">' + escapeHtml(record.factoryName) + '</strong>' : '') + (record.factoryName ? ' · ' : '') + '工厂编号：<strong style="color:#1677ff;">' + escapeHtml(record.factoryNo) + '</strong> ]</div>';
+    html += '</div>';
+    // 表头
+    html += '<div style="display:flex;padding:3px 0;border-bottom:1px solid #ddd;font-size:11px;color:#999;font-weight:500;">' +
+      '<div style="flex:0.8;text-align:center;color:#a0703c;font-weight:700;">自编色号</div>' +
+      '<div style="flex:1.2;text-align:center;">需求数量</div>' +
+      '<div style="flex:1;text-align:center;">厂编色号</div>' +
+      '<div style="flex:1.5;text-align:center;">要求</div></div>';
+    record.rows.forEach((r, j) => {
+      html += '<div style="display:flex;padding:3px 0;font-size:13px;">' +
+        '<div style="flex:0.8;text-align:center;color:#6b3a1f;">' + (r.selfCode||'') + '</div>' +
+        '<div style="flex:1.2;text-align:center;color:#ff4d4f;font-weight:600;">' + (r.quantity||'-') + '</div>' +
+        '<div style="flex:1;text-align:center;font-weight:500;">' + (r.colorCode||'-') + '</div>' +
+        '<div style="flex:1.5;text-align:center;color:#555;">' + (r.note||'') + '</div></div>';
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function applyFactoryHistoryFilter() {
+  loadFactoryHistory();
+}
+
+function resetFactoryHistoryFilter() {
+  var s = document.getElementById('fhSearchInput');
+  var f = document.getElementById('fhDateFrom');
+  var t = document.getElementById('fhDateTo');
+  if (s) s.value = '';
+  if (f) f.value = '';
+  if (t) t.value = '';
+  loadFactoryHistory();
+}
+
+function formatFactoryRecord(record) {
+  let text = '日期：' + record.date + '\n编号：' + record.factoryNo + '\n';
+  record.rows.forEach(function(r) {
+    let cc = (r.colorCode||'-');
+    if (cc !== '-' && cc.indexOf('#') === -1) cc = cc + '#';
+    text += cc + '\t' + (r.quantity||'-') + '\t\t' + (r.note || '') + '\n';
+  });
+  return text;
+}
+
+function copyFactoryRecord(id) {
+  const history = getFactoryHistory();
+  const record = history.find(h => h.id === id);
+  if (!record) { showToast('未找到记录'); return; }
+  const text = formatFactoryRecord(record);
+  fallbackCopy(text);
+}
+
+function copyFactoryForm() {
+  const factoryNo = document.getElementById('fFactoryNo').value.trim();
+  const rows = getFactoryRows();
+  if (rows.length === 0) { showToast('没有可复制的内容'); return; }
+  // 复制工厂时，要求列空白默认补上"报数量"
+  rows.forEach(function(r) { if (!r.note) r.note = '报数量'; });
+  const dateStr = document.getElementById('fFactoryDate').textContent;
+  const record = { date: dateStr, factoryNo: factoryNo || '未填写', rows: rows };
+  const text = formatFactoryRecord(record);
+  fallbackCopy(text);
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try { var ok = document.execCommand('copy'); if(ok) showToast('已复制到剪贴板'); else throw 'fail'; } catch(e) {
+    try { navigator.clipboard.writeText(text).then(function(){ showToast('已复制'); }).catch(function(){ showToast('复制失败，请长按手动复制'); }); } catch(e2) { showToast('复制失败'); }
+  }
+  document.body.removeChild(ta);
+}
+
+function deleteFactoryRecord(id) {
+  // 双击确认删除：第一次点击变成"确认删除"按钮
+  var btn = event.target;
+  if (!btn.dataset.confirming) {
+    btn.dataset.confirming = 'true';
+    btn.textContent = '确认?';
+    btn.style.background = '#ff4d4f';
+    btn.style.color = '#fff';
+    setTimeout(function() {
+      btn.dataset.confirming = '';
+      btn.textContent = '删除';
+      btn.style.background = '#fff';
+      btn.style.color = '#ff4d4f';
+    }, 3000);
+    return;
+  }
+  let history = getFactoryHistory();
+  history = history.filter(h => h.id !== id);
+  localStorage.setItem('meterConverterFactoryHistory', JSON.stringify(history));
+  ossSaveFactoryHistory(history);
+  showToast('已删除');
+  loadFactoryHistory();
+}
+
+function editFactoryRecord(id) {
+  var history = getFactoryHistory();
+  var record = history.find(function(h) { return h.id === id; });
+  if (!record) { showToast('未找到记录'); return; }
+
+  // 确保在工厂页面
+  if (document.getElementById('factoryPage').style.display !== 'block') {
+    openFactory();
+  }
+
+  // 回填工厂名称和编号
+  document.getElementById('fFactoryName').value = record.factoryName || '';
+  document.getElementById('fFactoryNo').value = record.factoryNo || '';
+
+  // 回填产品编号/色卡编号
+  var productCode = record.productCode || '';
+  var colorCard = record.colorCard || '';
+  
+  // 恢复色卡编号（优先使用colorCard，兼容旧数据用productCode）
+  var displayCode = colorCard || productCode;
+  if (displayCode) {
+    localStorage.setItem('currentProductCode', displayCode);
+    var ccInput = document.getElementById('fColorCard');
+    var ccDisplay = document.getElementById('productCodeDisplay');
+    if (ccInput) ccInput.value = displayCode;
+    if (ccDisplay) ccDisplay.style.display = 'flex';
+  }
+  
+  // 恢复客户名称
+  var custInput = document.getElementById('fCustomerName');
+  if (custInput) custInput.value = record.customer || '';
+
+  // 清空现有行，按记录重新添加
+  _factoryRowId = 0;
+  document.getElementById('fFactoryRows').innerHTML = '';
+
+  if (record.rows && record.rows.length > 0) {
+    record.rows.forEach(function(r) {
+      addFactoryRow();
+      var lastRow = document.getElementById('fFactoryRows').lastElementChild;
+      if (lastRow) {
+        var inputs = lastRow.querySelectorAll('input');
+        inputs.forEach(function(inp) {
+          var field = inp.getAttribute('data-field');
+          if (field === 'selfCode') inp.value = r.selfCode || '';
+          else if (field === 'quantity') inp.value = r.quantity || '';
+          else if (field === 'colorCode') inp.value = r.colorCode || '';
+          else if (field === 'note') inp.value = r.note || '';
+        });
+      }
+    });
+  } else {
+    addFactoryRow(); // 至少保留一行
+  }
+
+  showToast('数据已回填，可直接修改后保存');
+}
+
+function reorderFromHistory(id) {
+  var history = getFactoryHistory();
+  var record = history.find(function(h) { return h.id === id; });
+  if (!record) { showToast('未找到记录'); return; }
+
+  // 确保在工厂页面
+  if (document.getElementById('factoryPage').style.display !== 'block') {
+    openFactory();
+  }
+
+  // 回填工厂名称和编号
+  document.getElementById('fFactoryName').value = record.factoryName || '';
+  document.getElementById('fFactoryNo').value = record.factoryNo || '';
+
+  // 回填产品编号/色卡编号
+  var productCode = record.productCode || '';
+  var colorCard = record.colorCard || '';
+  
+  // 恢复色卡编号（优先使用colorCard，兼容旧数据用productCode）
+  var displayCode = colorCard || productCode;
+  if (displayCode) {
+    localStorage.setItem('currentProductCode', displayCode);
+    var ccInput = document.getElementById('fColorCard');
+    var ccDisplay = document.getElementById('productCodeDisplay');
+    if (ccInput) ccInput.value = displayCode;
+    if (ccDisplay) ccDisplay.style.display = 'flex';
+  }
+  
+  // 恢复客户名称
+  var custInput = document.getElementById('fCustomerName');
+  if (custInput) custInput.value = record.customer || '';
+
+  // 清空现有行，按记录重新添加
+  _factoryRowId = 0;
+  document.getElementById('fFactoryRows').innerHTML = '';
+
+  if (record.rows && record.rows.length > 0) {
+    record.rows.forEach(function(r) {
+      addFactoryRow();
+      var lastRow = document.getElementById('fFactoryRows').lastElementChild;
+      if (lastRow) {
+        var inputs = lastRow.querySelectorAll('input');
+        inputs.forEach(function(inp) {
+          var field = inp.getAttribute('data-field');
+          if (field === 'selfCode') inp.value = r.selfCode || '';
+          else if (field === 'quantity') inp.value = r.quantity || '';
+          else if (field === 'colorCode') inp.value = r.colorCode || '';
+          else if (field === 'note') inp.value = r.note || '';
+        });
+      }
+    });
+  } else {
+    addFactoryRow();
+  }
+
+  showToast('返单数据已加载，请修改数量后保存');
+}
+
+function copyModifyFromHistory(id) {
+  var history = getFactoryHistory();
+  var record = history.find(function(h) { return h.id === id; });
+  if (!record) { showToast('未找到记录'); return; }
+  
+  // 从历史记录中收集色号（selfCode + colorCode）
+  var rows = [];
+  record.rows.forEach(function(r) {
+    var selfCode = (r.selfCode || '').replace(/#/g, '').trim();
+    var colorCode = (r.colorCode || '').replace(/#/g, '').trim();
+    if (selfCode || colorCode) {
+      rows.push({ selfCode: selfCode, factoryCode: colorCode });
+    }
+  });
+  
+  if (rows.length === 0) { showToast('该记录没有色卡编号数据'); return; }
+  
+  // 填充弹窗：色卡编号=该记录保存的产品编号
+  document.getElementById('cmColorCardNo').value = record.productCode || '';
+  document.getElementById('cmCustomerName').value = record.customer || (document.getElementById('fCustomerName') || {}).value || '';
+  
+  // 渲染色号行
+  var html = '';
+  rows.forEach(function(r, i) {
+    html += '<div style="display:flex;align-items:center;padding:6px 8px;border-bottom:1px solid #f0ebe4;gap:8px;">';
+    html += '<div style="width:80px;"><input type="text" id="cmSelfCode_' + i + '" value="' + r.selfCode + '" placeholder="自编色号" style="width:100%;padding:6px 8px;border:1.5px solid #d4b896;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;background:#f0e2d0;color:#8b5e3c;font-weight:700;text-align:center;" onfocus="this.select()"></div>';
+    html += '<div style="width:80px;"><input type="text" id="cmFactoryCode_' + i + '" value="' + r.factoryCode + '" placeholder="厂编色号" style="width:100%;padding:6px 8px;border:1.5px solid #e8e4de;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;text-align:center;color:#444;" onfocus="this.select()"></div>';
+    html += '<div style="width:70px;"><input type="number" id="cmStrip_' + i + '" placeholder="条数" min="0" style="width:100%;padding:6px 8px;border:1.5px solid #e8e4de;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;text-align:center;" onfocus="this.select()"></div>';
+    html += '</div>';
+  });
+  document.getElementById('cmColorRows').innerHTML = html;
+  document.getElementById('copyModifyModal').style.display = 'block';
+}
+
+// 智能粘贴
+function onSmartPaste() {
+  var ta = document.getElementById('fSmartPaste');
+  if (!ta) return;
+  var text = ta.value.trim();
+  if (!text) return;
+  var lines = text.split(/[\n\r]+/);
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var cn = line.match(/[\u4e00-\u9fa5]+/g);
+    var code = line.match(/[A-Za-z0-9]+/g);
+    if (cn && cn.length > 0) document.getElementById('fFactoryName').value = cn[0];
+    if (code && code.length > 0) document.getElementById('fFactoryNo').value = code[0] + '#';
+  }
+  setTimeout(function() { ta.value = ''; }, 300);
+  showToast('已转换 ✓');
+}
+
+// 启动 - 等 OSS SDK 加载完再初始化（最多等3秒）
+// 直接初始化，不等待外部SDK
+init();
+
+// ===== 产品搜索功能 =====
+
+// Build search index: all codes as array for fast prefix matching
+const PRODUCT_CODES = Object.keys(PRODUCT_DB).sort();
+
+// ===== 从OSS异步加载最新产品数据 =====
+(function loadLatestProductData() {
+  fetch('https://youyi-01mishu.oss-cn-guangzhou.aliyuncs.com/friendship-tool/product_data.json?t=' + Date.now())
+    .then(function(res) { if (res.ok) return res.json(); throw new Error('Network error'); })
+    .then(function(data) {
+      // 清空旧数据，填入新数据
+      Object.keys(PRODUCT_DB).forEach(function(k) { delete PRODUCT_DB[k]; });
+      Object.assign(PRODUCT_DB, data);
+      PRODUCT_CODES.length = 0;
+      Object.keys(data).sort().forEach(function(k) { PRODUCT_CODES.push(k); });
+      console.log('产品数据已从云端更新，共 ' + PRODUCT_CODES.length + ' 条');
+      if (typeof showToast === 'function') showToast('数据已同步（' + PRODUCT_CODES.length + '条）');
+    })
+    .catch(function(err) {
+      console.log('云端数据加载失败，使用本地数据', err);
+    });
+})();
+
+function onProductSearch() {
+  var input = document.getElementById('productSearchInput');
+  var results = document.getElementById('productSearchResults');
+  var val = input.value.trim().toLowerCase();
+  
+  if (!val) {
+    results.style.display = 'none';
+    results.innerHTML = '';
+    return;
+  }
+  
+  // Find matching codes (prefix match + exact match + contains)
+  var matches = [];
+  for (var i = 0; i < PRODUCT_CODES.length; i++) {
+    var code = PRODUCT_CODES[i];
+    var codeLower = code.toLowerCase();
+    var arr = PRODUCT_DB[code];
+    var colorName = (arr && arr[0] && arr[0].s) ? arr[0].s.toLowerCase() : '';
+    if (codeLower === val || codeLower.indexOf(val) !== -1 || colorName.indexOf(val) !== -1) {
+      matches.push(code);
+      if (matches.length >= 30) break; // limit results
+    }
+  }
+  
+  // Prioritize: exact match first, then prefix, then contains
+  matches.sort(function(a, b) {
+    var aLower = a.toLowerCase();
+    var bLower = b.toLowerCase();
+    if (aLower === val) return -1;
+    if (bLower === val) return 1;
+    if (aLower.indexOf(val) === 0 && bLower.indexOf(val) !== 0) return -1;
+    if (bLower.indexOf(val) === 0 && aLower.indexOf(val) !== 0) return 1;
+    return aLower.localeCompare(bLower);
+  });
+  
+  if (matches.length === 0) {
+    results.innerHTML = '<div style="padding:10px;text-align:center;color:#999;font-size:13px;">未找到匹配产品</div>';
+    results.style.display = 'block';
+    return;
+  }
+  
+  var html = '';
+  for (var i = 0; i < matches.length; i++) {
+    var code = matches[i];
+    var entries = PRODUCT_DB[code];
+    for (var j = 0; j < entries.length; j++) {
+      var e = entries[j];
+      var displayCode = code;
+      var priceStr = e.p ? (' ¥' + e.p) : '';
+      html += '<div style="padding:8px 10px;border-bottom:1px solid #f5f5f5;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="selectProduct(\'' + code.replace(/'/g, "\\'") + '\', \'' + e.f.replace(/'/g, "\\'") + '\', \'' + e.fc.replace(/'/g, "\\'") + '\')" onmouseover="this.style.background=\'#fff7e6\'" onmouseout="this.style.background=\'#fff\'">';
+      html += '<div><span style="font-weight:600;color:#d48806;font-size:14px;">' + displayCode + '</span>';
+      html += '<span style="font-size:11px;color:#999;margin-left:6px;">' + e.s + '</span></div>';
+      html += '<div style="text-align:right;"><span style="font-size:12px;color:#333;">' + e.f + '</span>';
+      html += '<span style="font-size:12px;color:#1677ff;margin-left:4px;font-weight:600;">' + e.fc + '</span>';
+      if (e.p) html += '<span style="font-size:11px;color:#ff4d4f;margin-left:4px;">' + priceStr + '</span>';
+      html += '</div></div>';
+    }
+  }
+  
+  results.innerHTML = html;
+  results.style.display = 'block';
+}
+
+function selectProduct(code, factoryName, factoryCode) {
+  // 保存搜索历史
+  saveSearchHistory(code);
+  // 保存当前产品编号（用于复制改数）
+  localStorage.setItem('currentProductCode', code);
+  // 显示色卡编号
+  var display = document.getElementById('productCodeDisplay');
+  var colorInput = document.getElementById('fColorCard');
+  if (display && colorInput) {
+    colorInput.value = code;
+    display.style.display = 'flex';
+  }
+  // Fill factory name
+  document.getElementById('fFactoryName').value = factoryName;
+  // Fill factory code with # suffix
+  var fc = factoryCode;
+  if (fc && fc.indexOf('#') === -1) fc = fc + '#';
+  document.getElementById('fFactoryNo').value = fc;
+  // Save factory name for autocomplete
+  saveFactoryName(factoryName);
+  // Clear search
+  document.getElementById('productSearchInput').value = '';
+  document.getElementById('productSearchResults').style.display = 'none';
+  showToast('已填充: ' + code + ' → ' + factoryName + ' ' + factoryCode + '#');
+}
+
+// 搜索历史功能
+function saveSearchHistory(code) {
+  try {
+    var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    // 去重
+    history = history.filter(function(c) { return c !== code; });
+    // 加到最前面
+    history.unshift(code);
+    // 最多保留10条
+    if (history.length > 10) history = history.slice(0, 10);
+    localStorage.setItem('searchHistory', JSON.stringify(history));
+  } catch(e) {}
+}
+
+function showSearchHistory() {
+  var input = document.getElementById('productSearchInput');
+  var results = document.getElementById('productSearchResults');
+  if (input.value.trim()) return; // 有输入时不显示历史
+  try {
+    var history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    if (history.length === 0) return;
+    var html = '';
+    for (var i = 0; i < history.length; i++) {
+      html += '<div style="padding:8px 10px;border-bottom:1px solid #f5f5f5;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="selectHistoryCode(\'' + history[i].replace(/'/g, "\\'") + '\')" onmouseover="this.style.background=\'#fff7e6\'" onmouseout="this.style.background=\'#fff\'">';
+      html += '<span style="font-size:13px;color:#d48806;">🕐 ' + history[i] + '</span>';
+      html += '<span style="font-size:11px;color:#999;">点击搜索</span>';
+      html += '</div>';
+    }
+    results.innerHTML = html;
+    results.style.display = 'block';
+  } catch(e) {}
+}
+
+function selectHistoryCode(code) {
+  var input = document.getElementById('productSearchInput');
+  input.value = code;
+  onProductSearch();
+}
+
+function clearProductSearch() {
+  document.getElementById('productSearchInput').value = '';
+  document.getElementById('productSearchResults').style.display = 'none';
+  document.getElementById('productSearchResults').innerHTML = '';
+  // 隐藏色卡编号显示
+  var display = document.getElementById('productCodeDisplay');
+  if (display) display.style.display = 'none';
+  localStorage.removeItem('currentProductCode');
+}
+
+function convertProduct() {
+  var input = document.getElementById('productSearchInput');
+  var val = input.value.trim().replace('#', '');
+  if (!val) { showToast('请先输入产品编号'); return; }
+  var key = val.toLowerCase();
+  // 精确匹配（用PRODUCT_CODES遍历，保持原始大小写）
+  for (var i = 0; i < PRODUCT_CODES.length; i++) {
+    if (PRODUCT_CODES[i].toLowerCase() === key) {
+      var entries = PRODUCT_DB[PRODUCT_CODES[i]];
+      if (entries && entries.length > 0) {
+        var e = entries[0];
+        input.value = PRODUCT_CODES[i];
+        selectProduct(PRODUCT_CODES[i], e.f, e.fc);
+        return;
+      }
+    }
+  }
+  // 前缀匹配取第一条
+  for (var i = 0; i < PRODUCT_CODES.length; i++) {
+    var code = PRODUCT_CODES[i];
+    if (code.toLowerCase().indexOf(key) === 0) {
+      var entries = PRODUCT_DB[code];
+      if (entries && entries.length > 0) {
+        var e = entries[0];
+        input.value = code;
+        selectProduct(code, e.f, e.fc);
+        return;
+      }
+    }
+  }
+  showToast('未找到匹配产品: ' + val);
+}
+
+// Close search results when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#productSearchInput') && !e.target.closest('#productSearchResults') && !e.target.closest('[onclick*="clearProductSearch"]')) {
+    var results = document.getElementById('productSearchResults');
+    if (results) results.style.display = 'none';
+  }
+});
+
+
+// ===== 复制改数功能 =====
+function openCopyModifyModal() {
+  var factoryNo = document.getElementById('fFactoryNo').value.trim();
+  if (!factoryNo) { showToast('请先填写工厂编号'); return; }
+  
+  // 收集所有行，检查自编色号和厂编色号是否都填齐
+  var rows = [];
+  var missing = false;
+  var allRows = document.querySelectorAll('#fFactoryRows > div');
+  allRows.forEach(function(rowEl) {
+    var inputs = rowEl.querySelectorAll('input');
+    var selfCode = inputs[0] ? inputs[0].value.trim().replace('#', '') : '';
+    var factoryCode = inputs[2] ? inputs[2].value.trim() : '';
+    // 跳过完全空行
+    if (!selfCode && !factoryCode) return;
+    // 检查是否都填了
+    if (!selfCode || !factoryCode) { missing = true; return; }
+    rows.push({ selfCode: selfCode, factoryCode: factoryCode });
+  });
+  
+  if (missing) { showToast('自编色号和厂编色号都要填齐'); return; }
+  if (rows.length === 0) { showToast('没有色卡编号数据'); return; }
+  
+  // 填充弹窗：色卡编号=最初搜索的产品编号（转换前保存的）
+  var colorCardVal = (document.getElementById('fColorCard') || {}).value || localStorage.getItem('currentProductCode') || '';
+  document.getElementById('cmColorCardNo').value = colorCardVal;
+  document.getElementById('cmCustomerName').value = (document.getElementById('fCustomerName') || {}).value || '';
+  
+  // 工厂单位是"条"时，自动读取已填的条数
+  var fUnit = getFactoryUnit();
+  var autoStripMap = {};
+  if (fUnit === '条') {
+    var stripIdx = 0;
+    allRows.forEach(function(rowEl) {
+      var inputs = rowEl.querySelectorAll('input');
+      var selfCode = inputs[0] ? inputs[0].value.trim().replace('#', '') : '';
+      var factoryCode = inputs[2] ? inputs[2].value.trim() : '';
+      var qty = inputs[1] ? parseInt(inputs[1].value) : 0;
+      if (selfCode && factoryCode && qty > 0) {
+        autoStripMap[stripIdx] = qty;
+        stripIdx++;
+      }
+    });
+  }
+  
+  // 渲染色号行
+  var html = '';
+  rows.forEach(function(r, i) {
+    var stripVal = (fUnit === '条' && autoStripMap[i]) ? (' value="' + autoStripMap[i] + '"') : '';
+    var stripPh = (fUnit === '条') ? '请报数量' : '条数';
+    html += '<div style="display:flex;align-items:center;padding:6px 8px;border-bottom:1px solid #f0ebe4;gap:8px;">';
+    html += '<div style="width:80px;"><input type="text" id="cmSelfCode_' + i + '" value="' + r.selfCode + '" placeholder="自编色号" style="width:100%;padding:6px 8px;border:1.5px solid #d4b896;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;background:#f0e2d0;color:#8b5e3c;font-weight:700;text-align:center;" onfocus="this.select()"></div>';
+    html += '<div style="width:80px;"><input type="text" id="cmFactoryCode_' + i + '" value="' + r.factoryCode + '" placeholder="厂编色号" style="width:100%;padding:6px 8px;border:1.5px solid #e8e4de;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;text-align:center;color:#444;" onfocus="this.select()"></div>';
+    html += '<div style="width:70px;"><input type="number" id="cmStrip_' + i + '"' + stripVal + ' placeholder="' + stripPh + '" min="0" style="width:100%;padding:6px 8px;border:1.5px solid #e8e4de;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;text-align:center;" onfocus="this.select()"></div>';
+    html += '</div>';
+  });
+  document.getElementById('cmColorRows').innerHTML = html;
+  document.getElementById('copyModifyModal').style.display = 'block';
+}
+
+function closeCopyModifyModal() {
+  document.getElementById('copyModifyModal').style.display = 'none';
+}
+
+function doOrderProcess() {
+  var customer = document.getElementById('cmCustomerName').value.trim();
+  var colorCard = document.getElementById('cmColorCardNo').value.trim();
+
+  // ① 客户名称校验
+  if (!customer) {
+    showToast('❌ 请填写客户名称');
+    document.getElementById('cmCustomerName').style.border = '1.5px solid #ff4d4f';
+    document.getElementById('cmCustomerName').style.background = '#fff1f0';
+    return;
+  }
+  document.getElementById('cmCustomerName').style.border = '';
+  document.getElementById('cmCustomerName').style.background = '';
+  
+  // ② 色卡编号校验
+  if (!colorCard) {
+    showToast('❌ 请填写色卡编号');
+    document.getElementById('cmColorCardNo').style.border = '1.5px solid #ff4d4f';
+    document.getElementById('cmColorCardNo').style.background = '#fff1f0';
+    return;
+  }
+  document.getElementById('cmColorCardNo').style.border = '';
+  document.getElementById('cmColorCardNo').style.background = '';
+  
+  // ③ 逐行校验色号和条数
+  var orderItems = [];
+  var stripInputs = document.querySelectorAll('#cmColorRows input[type="number"]');
+  var hasError = false;
+  stripInputs.forEach(function(inp, idx) {
+    var rowNum = idx + 1;
+    var val = parseInt(inp.value);
+    var selfCodeInput = document.getElementById('cmSelfCode_' + idx);
+    var selfCode = selfCodeInput ? selfCodeInput.value.trim().replace('#', '') : '';
+    var factoryCodeInput = document.getElementById('cmFactoryCode_' + idx);
+    var factoryCode = factoryCodeInput ? factoryCodeInput.value.trim() : '';
+    
+    var hasAnyCode = selfCode || factoryCode;
+    var hasStrips = inp.value !== '' && !isNaN(val) && val > 0;
+    
+    // 清除上一次的红框
+    inp.style.border = '';
+    inp.style.background = '';
+    if (selfCodeInput) { selfCodeInput.style.border = ''; selfCodeInput.style.background = ''; }
+    if (factoryCodeInput) { factoryCodeInput.style.border = ''; factoryCodeInput.style.background = ''; }
+    
+    // 有色号但条数空了
+    if (hasAnyCode && !hasStrips) {
+      showToast('❌ 第' + rowNum + '行：条数未填');
+      inp.style.border = '1.5px solid #ff4d4f';
+      inp.style.background = '#fff1f0';
+      hasError = true;
+      return;
+    }
+    
+    // 有条数但色号全空
+    if (hasStrips && !hasAnyCode) {
+      showToast('❌ 第' + rowNum + '行：请填色号');
+      if (factoryCodeInput) { factoryCodeInput.style.border = '1.5px solid #ff4d4f'; factoryCodeInput.style.background = '#fff1f0'; }
+      if (selfCodeInput) { selfCodeInput.style.border = '1.5px solid #ff4d4f'; selfCodeInput.style.background = '#fff1f0'; }
+      hasError = true;
+      return;
+    }
+    
+    if (hasStrips) {
+      orderItems.push({ colorCode: factoryCode, selfCode: selfCode, strips: val });
+    }
+  });
+  
+  if (hasError) return;
+  
+  if (orderItems.length === 0) { showToast('❌ 请至少填一行色号和条数'); return; }
+  
+  // 关闭弹窗
+  closeCopyModifyModal();
+
+  // 自动保存到工厂历史
+  var _afn = document.getElementById('fFactoryName').value.trim();
+  var _ano = document.getElementById('fFactoryNo').value.trim();
+  if (_ano) {
+    var _anow = new Date();
+    var _ads = _anow.getFullYear() + '-' + String(_anow.getMonth()+1).padStart(2,'0') + '-' + String(_anow.getDate()).padStart(2,'0');
+    var _ats = String(_anow.getHours()).padStart(2,'0') + ':' + String(_anow.getMinutes()).padStart(2,'0');
+    var _aunit = getFactoryUnit();
+    var _areport = {
+      id: Date.now(), date: _ads, time: _ats,
+      factoryName: _afn, factoryNo: _ano,
+      customer: customer, colorCard: colorCard,
+      rows: orderItems.map(function(item) {
+        return { selfCode: item.selfCode, colorCode: item.colorCode, quantity: item.strips + (_aunit||'条'), note: '' };
+      })
+    };
+    var _ah = getFactoryHistory();
+    _ah.unshift(_areport);
+    localStorage.setItem('meterConverterFactoryHistory', JSON.stringify(_ah));
+    ossSaveFactoryHistory(_ah);
+  }
+
+  // 关闭工厂页面，跳回主页面
+  document.getElementById('factoryPage').style.display = 'none';
+  document.getElementById('mainPage').style.display = 'block';
+
+  // 根据工厂单位自动切换主页转换率模式
+  var fUnit = getFactoryUnit();
+  
+  // 如果工厂单位是"条"，弹窗口选目标单位
+  if (fUnit === '条') {
+    showFactoryImportUnitDialog(customer, colorCard, orderItems);
+    return;
+  }
+  
+  var targetMode = (fUnit === 'KG') ? 'kg' : (fUnit === '码') ? 'yard' : 'meter';
+  if (rateMode !== targetMode) {
+    // 先保存当前值，再切换模式
+    saveRateVal();
+    rateMode = targetMode;
+    syncRateUI();
+  }
+  // 强制设置全局转换率为当前模式默认值
+  var newRate = rateMode === 'kg' ? 2 : (rateMode === 'yard' ? 0 : 0.965);
+  document.getElementById('globalRate').value = newRate;
+  // 更新所有已有行的转换率为默认值
+  rows.forEach(r => { r.rate = newRate; });
+  
+  // 自动填充客户名称和色卡编号
+  document.getElementById('globalCustomer').value = customer;
+  document.getElementById('globalColorCode').value = colorCard;
+  
+  // 获取全局转换率
+  var rate = parseFloat(document.getElementById('globalRate').value) || (rateMode === 'kg' ? 2 : (rateMode === 'yard' ? 0 : 0.965));
+  
+  // 记录导入前的行数，用于定位新导入的行
+  var rowsBeforeImport = rows.length;
+  
+  // 每个色号按条数生成对应行数，条数=几就生成几行（原数量留空，等用户逐条填米数）
+  var totalRows = 0;
+  orderItems.forEach(function(item) {
+    for (var i = 0; i < item.strips; i++) {
+      addRowData('', rate, customer, item.colorCode, item.selfCode);
+      totalRows++;
+    }
+  });
+  
+  // 清空新导入行的序号
+  for (var i = rowsBeforeImport; i < rows.length; i++) {
+    rows[i].index = '';
+  }
+  
+  render();
+  
+  // 跳转到总结区
+  var summaryEl = document.querySelector('.summary');
+  if (summaryEl) {
+    setTimeout(function() {
+      summaryEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+  
+  showToast('已导入 ' + totalRows + ' 行到主页面');
+  
+    // 清空工厂报米数窗口所有记录
+    var _ccn2 = document.getElementById('cmCustomerName'); if(_ccn2) _ccn2.value = '';
+    var _ccc2 = document.getElementById('cmColorCardNo'); if(_ccc2) _ccc2.value = '';
+    var _ccr2 = document.getElementById('cmColorRows'); if(_ccr2) _ccr2.innerHTML = '';
+    var _fcn2 = document.getElementById('fCustomerName'); if(_fcn2) _fcn2.value = '';
+    var _ffn2 = document.getElementById('fFactoryName'); if(_ffn2) _ffn2.value = '';
+    var _ffno2 = document.getElementById('fFactoryNo'); if(_ffno2) _ffno2.value = '';
+    var _fcl2 = document.getElementById('fColorCard'); if(_fcl2) _fcl2.value = '';
+    var _pcd2 = document.getElementById('productCode_display'); if(_pcd2) _pcd2.style.display = 'none';
+}
+
+function copyOrderResult() {
+  var customer = document.getElementById('orderCustomer').textContent;
+  var colorCard = document.getElementById('orderColorCard').textContent;
+  var rate = document.getElementById('orderConversionRate').value;
+  var text = '客户：' + customer + '\n色卡编号：' + colorCard + '\n';
+  if (rate) text += '转换率：' + rate + '米/条\n';
+  
+  var items = document.querySelectorAll('#orderColorList > div');
+  items.forEach(function(div) {
+    var label = div.querySelector('div').textContent;
+    var inputs = div.querySelectorAll('input');
+    text += label + '\n';
+    inputs.forEach(function(inp, i) {
+      if (inp.value) text += (i+1) + '# ' + inp.value + '米\n';
+    });
+    text += '\n';
+  });
+  
+  fallbackCopy(text);
+}
+
+function fillOrderMeters() {
+  var rate = parseFloat(document.getElementById('orderConversionRate').value);
+  if (!rate || rate <= 0) { showToast('请输入有效的转换率'); return; }
+  var inputs = document.querySelectorAll('#orderColorList input[type="number"]');
+  var count = 0;
+  inputs.forEach(function(inp) {
+    if (!inp.value || parseFloat(inp.value) === 0) {
+      inp.value = rate;
+      count++;
+    }
+  });
+  showToast('已填充 ' + count + ' 个格子（转换率: ' + rate + ' 米/条）');
+}
+
+function closeOrderResult() {
+  document.getElementById('orderResultArea').style.display = 'none';
+}
+
+
+// ===== 管理员数据更新功能 =====
+var adminAuthenticated = false;
+
+function openAdminPanel() {
+  document.getElementById('adminOverlay').classList.add('active');
+  if (!adminAuthenticated) {
+    document.getElementById('adminLoginSection').style.display = 'block';
+    document.getElementById('adminUpdateSection').classList.remove('active');
+  }
+  document.getElementById('adminPwdInput').value = '';
+  document.getElementById('adminLoginStatus').classList.remove('show');
+}
+
+function closeAdminPanel() {
+  document.getElementById('adminOverlay').classList.remove('active');
+}
+
+function adminLogin() {
+  var pwd = document.getElementById('adminPwdInput').value;
+  var statusEl = document.getElementById('adminLoginStatus');
+  if (pwd === 'youyi3398313') {
+    adminAuthenticated = true;
+    document.getElementById('adminLoginSection').style.display = 'none';
+    document.getElementById('adminUpdateSection').classList.add('active');
+    statusEl.classList.remove('show');
+  } else {
+    statusEl.textContent = '密码错误，请重试';
+    statusEl.className = 'admin-status show error';
+  }
+}
+
+document.getElementById('adminFileInput').addEventListener('change', function() {
+  var btn = document.getElementById('adminUploadBtn');
+  btn.disabled = !(this.files && this.files.length > 0);
+});
+
+function adminUploadProductData() {
+  var fileInput = document.getElementById('adminFileInput');
+  var statusEl = document.getElementById('adminUploadStatus');
+  var uploadBtn = document.getElementById('adminUploadBtn');
+
+  if (!fileInput.files || fileInput.files.length === 0) {
+    showAdminStatus(statusEl, '请先选择文件', 'error');
+    return;
+  }
+
+  var file = fileInput.files[0];
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = '解析中...';
+  showAdminStatus(statusEl, '正在解析文件: ' + file.name, 'info');
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var workbook = XLSX.read(data, { type: 'array' });
+      var result = {};
+      var totalCount = 0;
+
+      workbook.SheetNames.forEach(function(sheetName) {
+        var sheet = workbook.Sheets[sheetName];
+        var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (rows.length < 2) return;
+
+        var headerRowIdx = -1;
+        var colMap = { code: -1, factory: -1, factoryCode: -1, price: -1 };
+
+        for (var i = 0; i < Math.min(rows.length, 10); i++) {
+          var row = rows[i];
+          if (!row) continue;
+          for (var j = 0; j < row.length; j++) {
+            var cell = String(row[j] || '').trim().toLowerCase();
+            if (cell === '自编' || cell === '编号' || cell === '代码') { colMap.code = j; }
+            if (cell === '工厂' || cell === '工厂名' || cell === '厂家') { colMap.factory = j; }
+            if (cell === '工厂编号' || cell === '厂编' || cell === '厂编色号' || cell === '色号') { colMap.factoryCode = j; }
+            if (cell === '价格' || cell === '单价' || cell === '售价') { colMap.price = j; }
+          }
+          if (colMap.code >= 0) { headerRowIdx = i; break; }
+        }
+
+        if (headerRowIdx < 0) {
+          console.log('Sheet "' + sheetName + '" 未找到表头，跳过');
+          return;
+        }
+
+        console.log('✅ Sheet "' + sheetName + '" 表头行=' + headerRowIdx + ', 列映射: 编号列=' + colMap.code + ', 工厂列=' + colMap.factory + ', 厂编列=' + colMap.factoryCode + ', 价格列=' + colMap.price);
+
+        var seriesName = sheetName;
+        for (var r = headerRowIdx + 1; r < rows.length; r++) {
+          var rowData = rows[r];
+          if (!rowData || rowData.length === 0) continue;
+          var code = colMap.code >= 0 ? String(rowData[colMap.code] || '').trim() : '';
+          var factory = colMap.factory >= 0 ? String(rowData[colMap.factory] || '').trim() : '';
+          var fCode = colMap.factoryCode >= 0 ? String(rowData[colMap.factoryCode] || '').trim() : '';
+          var price = colMap.price >= 0 ? String(rowData[colMap.price] || '').trim() : '';
+          if (!code) continue;
+          if (/^\d+\.0+$/.test(code)) { code = code.replace(/\.0+$/, ''); }
+          if (!result[code]) { result[code] = []; }
+          result[code].push({ s: seriesName, f: factory, fc: fCode, p: price });
+          totalCount++;
+        }
+      });
+
+      if (totalCount === 0) {
+        showAdminStatus(statusEl, '未能从文件中解析到有效数据，请检查文件格式', 'error');
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = '上传并更新';
+        return;
+      }
+
+      // 统计价格覆盖情况
+      var withPrice = 0, noPrice = 0;
+      Object.keys(result).forEach(function(k) {
+        result[k].forEach(function(e) {
+          if ((e.p || '').trim()) withPrice++; else noPrice++;
+        });
+      });
+      console.log('📊 解析统计: 共' + totalCount + '条, 有价格' + withPrice + '条(' + (withPrice/totalCount*100).toFixed(1) + '%), 无价格' + noPrice + '条');
+      if (withPrice === 0) {
+        console.warn('⚠️ 警告: 未找到任何价格数据！请检查WPS表头是否包含"价格"列');
+      }
+
+      var jsonStr = JSON.stringify(result);
+      showAdminStatus(statusEl, '解析完成，共 ' + Object.keys(result).length + ' 个编号、' + totalCount + ' 条记录，正在上传到云端...', 'info');
+      uploadToOSS(jsonStr, statusEl, uploadBtn, result);
+    } catch (err) {
+      console.error('文件解析失败:', err);
+      showAdminStatus(statusEl, '文件解析失败: ' + err.message + '\n如果文件有密码保护，请先去掉密码再导出', 'error');
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = '上传并更新';
+    }
+  };
+  reader.onerror = function() {
+    showAdminStatus(statusEl, '文件读取失败', 'error');
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = '上传并更新';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function uploadToOSS(jsonStr, statusEl, uploadBtn, parsedData) {
+  if (!ossClient) {
+    try { initOSS(); } catch (e) { console.error('OSS初始化失败:', e); }
+  }
+  if (!ossClient) {
+    showAdminStatus(statusEl, 'OSS客户端初始化失败，无法上传。请检查网络连接后重试。', 'error');
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = '上传并更新';
+    return;
+  }
+
+  var blob = new Blob([jsonStr], { type: 'application/json' });
+  var ossKey = 'friendship-tool/product_data.json';
+
+  ossClient.put(ossKey, blob).then(function(res) {
+    Object.keys(PRODUCT_DB).forEach(function(k) { delete PRODUCT_DB[k]; });
+    Object.assign(PRODUCT_DB, parsedData);
+    PRODUCT_CODES.length = 0;
+    Object.keys(parsedData).sort().forEach(function(k) { PRODUCT_CODES.push(k); });
+
+    var totalRecords = 0;
+    var withPriceCount = 0;
+    Object.keys(parsedData).forEach(function(k) { parsedData[k].forEach(function(e) { totalRecords++; if ((e.p||'').trim()) withPriceCount++; }); });
+    var pricePct = totalRecords > 0 ? (withPriceCount/totalRecords*100).toFixed(1) : '0';
+    var msg = '上传成功！\n共 ' + Object.keys(parsedData).length + ' 个编号，' + totalRecords + ' 条记录\n价格覆盖: ' + withPriceCount + '条(' + pricePct + '%)\n数据已更新到云端并同步到本地';
+    showAdminStatus(statusEl, msg, 'success');
+    if (typeof showToast === 'function') { showToast('产品数据已更新 ✓'); }
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = '上传并更新';
+  }).catch(function(err) {
+    console.error('OSS上传失败:', err);
+    showAdminStatus(statusEl, '上传失败: ' + (err.message || '未知错误') + '\n请检查网络连接后重试', 'error');
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = '上传并更新';
+  });
+}
+
+function showAdminStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className = 'admin-status show ' + type;
+}
+
+document.getElementById('adminOverlay').addEventListener('click', function(e) {
+  if (e.target === this) { closeAdminPanel(); }
+});
+
+function showFactoryImportUnitDialog(customer, colorCard, orderItems) {
+  var overlay = document.getElementById('factoryImportUnitOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'factoryImportUnitOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<div style="background:#fff;border-radius:12px;padding:24px;width:300px;text-align:center;">' +
+      '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:#333;">工厂单位是“条”</div>' +
+      '<div style="font-size:13px;color:#999;margin-bottom:16px;">请选择导入开单后的单位</div>' +
+      '<div id="fimportBtns" style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;">' +
+        '<button data-unit="meter" class="fimport-btn" style="flex:1;padding:12px;background:#e3f2fd;color:#1565c0;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">米</button>' +
+        '<button data-unit="yard" class="fimport-btn" style="flex:1;padding:12px;background:#e8f5e9;color:#2e7d32;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">码</button>' +
+        '<button data-unit="kg" class="fimport-btn" style="flex:1;padding:12px;background:#fff3e0;color:#e65100;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">公斤</button>' +
+      '</div>' +
+    '</div>';
+    document.body.appendChild(overlay);
+  }
+  // 每次显示时都重新绑定事件，确保按钮有效
+  var btns = overlay.querySelectorAll('.fimport-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].onclick = function() {
+      doFactoryImportWithUnit(this.getAttribute('data-unit'));
+    };
+  }
+  window._factoryImportCtx = {customer: customer, colorCard: colorCard, orderItems: orderItems};
+  overlay.style.display = 'flex';
+}
+
+function closeFactoryImportUnitDialog() {
+  var overlay = document.getElementById('factoryImportUnitOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function doFactoryImportWithUnit(targetUnit) {
+  try {
+    var ctx = window._factoryImportCtx;
+    if (!ctx) { console.error('No import context found'); return; }
+    closeFactoryImportUnitDialog();
+    
+    // 先关闭工厂页面，回到主页面
+    var fp = document.getElementById('factoryPage');
+    if (fp) fp.style.display = 'none';
+    var mp = document.getElementById('mainPage');
+    if (mp) mp.style.display = 'block';
+    
+    // 切换到目标单位
+    try { saveRateVal(); } catch(e) {}
+    rateMode = targetUnit;
+    try { syncRateUI(); } catch(e) { console.warn('syncRateUI:', e); }
+    try { updateModeLabels(); } catch(e) {}
+    try {
+      var rateEl = document.getElementById('globalRate');
+      if (targetUnit === 'meter') rateEl.value = rateEl.dataset.meterVal || '0.965';
+      else if (targetUnit === 'kg') rateEl.value = rateEl.dataset.kgVal || '2';
+      else if (targetUnit === 'yard') rateEl.value = rateEl.dataset.yardVal || '0';
+    } catch(e) { console.warn('rateEl:', e); }
+    try { saveRateVal(); } catch(e) {}
+    
+    // 自动填充客户名称和色卡编号
+    var gcEl = document.getElementById('globalCustomer');
+    if (gcEl) gcEl.value = ctx.customer || '';
+    var ccEl = document.getElementById('globalColorCode');
+    if (ccEl) ccEl.value = ctx.colorCard || '';
+    
+    // 自动保存到工厂历史
+    var _afn2 = document.getElementById('fFactoryName').value.trim();
+    var _ano2 = document.getElementById('fFactoryNo').value.trim();
+    if (_ano2) {
+      var _anow2 = new Date();
+      var _ads2 = _anow2.getFullYear() + '-' + String(_anow2.getMonth()+1).padStart(2,'0') + '-' + String(_anow2.getDate()).padStart(2,'0');
+      var _ats2 = String(_anow2.getHours()).padStart(2,'0') + ':' + String(_anow2.getMinutes()).padStart(2,'0');
+      var _areport2 = {
+        id: Date.now(), date: _ads2, time: _ats2,
+        factoryName: _afn2, factoryNo: _ano2,
+        customer: ctx.customer || '', colorCard: ctx.colorCard || '',
+        rows: ctx.orderItems.map(function(item) {
+          return { selfCode: item.selfCode, colorCode: item.colorCode, quantity: item.strips + '条', note: '' };
+        })
+      };
+      var _ah2 = getFactoryHistory();
+      _ah2.unshift(_areport2);
+      localStorage.setItem('meterConverterFactoryHistory', JSON.stringify(_ah2));
+      ossSaveFactoryHistory(_ah2);
+    }
+    
+    // 强制设置全局转换率和所有已有行的转换率为模式默认值
+    var defaultRate = targetUnit === 'kg' ? 2 : (targetUnit === 'yard' ? 0 : 0.965);
+    var rateEl2 = document.getElementById('globalRate');
+    rateEl2.value = defaultRate;
+    rows.forEach(function(r) { r.rate = defaultRate; });
+    
+    var rate = defaultRate;
+    var rowsBeforeImport = rows.length;
+    
+    ctx.orderItems.forEach(function(item) {
+      for (var i = 0; i < item.strips; i++) {
+        addRowData('', rate, ctx.customer, item.colorCode, item.selfCode);
+      }
+    });
+    
+    for (var i = rowsBeforeImport; i < rows.length; i++) {
+      rows[i].index = '';
+    }
+    
+    render();
+    // 清空工厂报米数窗口所有记录
+    var _ccn = document.getElementById('cmCustomerName'); if(_ccn) _ccn.value = '';
+    var _ccc = document.getElementById('cmColorCardNo'); if(_ccc) _ccc.value = '';
+    var _ccr = document.getElementById('cmColorRows'); if(_ccr) _ccr.innerHTML = '';
+    var _fcn = document.getElementById('fCustomerName'); if(_fcn) _fcn.value = '';
+    var _ffn = document.getElementById('fFactoryName'); if(_ffn) _ffn.value = '';
+    var _ffno = document.getElementById('fFactoryNo'); if(_ffno) _ffno.value = '';
+    var _fcl = document.getElementById('fColorCard'); if(_fcl) _fcl.value = '';
+    var _pcd = document.getElementById('productCode_display'); if(_pcd) _pcd.style.display = 'none';
+    showToast('已导入 ' + ctx.orderItems.reduce(function(a,b){return a+b.strips;},0) + ' 条，单位已切换');
+  } catch(err) {
+    console.error('doFactoryImportWithUnit error:', err);
+    showToast('导入出错: ' + err.message);
+  }
+}
+</script>
+</body>
+</html>

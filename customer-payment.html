@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>客户公账登记</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    /* 表单卡片 */
+    .form-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+    .form-card h3 {
+      font-size: 15px;
+      color: #333;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .form-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group.full {
+      flex: 1 1 100%;
+    }
+    label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    input, select {
+      padding: 12px 14px;
+      border: 2px solid #e8e8e8;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+    }
+    input[type="number"] {
+      font-variant-numeric: tabular-nums;
+    }
+    input[readonly] {
+      background: #f0f7ff;
+      border-color: #d6e4ff;
+      color: #1677ff;
+      font-weight: 600;
+    }
+    
+    /* 计算预览 */
+    .calc-preview {
+      background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      border: 1px solid #d6e4ff;
+    }
+    .calc-preview h4 {
+      font-size: 13px;
+      color: #1677ff;
+      margin-bottom: 10px;
+    }
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .calc-row:last-child {
+      margin-bottom: 0;
+      padding-top: 8px;
+      border-top: 1px dashed #d6e4ff;
+    }
+    .calc-label {
+      font-size: 13px;
+      color: #666;
+    }
+    .calc-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1677ff;
+    }
+    .calc-value.green {
+      color: #52c41a;
+    }
+    
+    /* 开票状态开关 */
+    .invoice-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+    .invoice-toggle span {
+      font-size: 15px;
+      color: #333;
+      font-weight: 500;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 28px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .3s;
+      border-radius: 28px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #52c41a;
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+    
+    /* 按钮 */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+    
+    /* 搜索和筛选 */
+    .filter-bar {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .filter-row {
+      display: flex;
+      gap: 10px;
+    }
+    .filter-bar input, .filter-bar select {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    
+    /* 记录列表 */
+    .record-list {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .record-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .record-header h3 {
+      font-size: 16px;
+      color: #333;
+    }
+    .record-count {
+      font-size: 13px;
+      color: #666;
+      background: #fff;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+    
+    .record-item {
+      padding: 14px 18px;
+      border-bottom: 1px solid #f0f0f0;
+      position: relative;
+    }
+    .record-item:last-child {
+      border-bottom: none;
+    }
+    .record-item.invoice-done {
+      background: linear-gradient(135deg, #f6ffed 0%, #e6fffb 100%);
+    }
+    .record-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .customer-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+    .invoice-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .invoice-badge.done {
+      background: #52c41a;
+      color: #fff;
+    }
+    .invoice-badge.pending {
+      background: #faad14;
+      color: #fff;
+    }
+    .record-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .record-info span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .record-info .amount {
+      color: #1677ff;
+      font-weight: 600;
+    }
+    .record-info .actual {
+      color: #52c41a;
+      font-weight: 600;
+    }
+    .record-info .fee {
+      color: #ff4d4f;
+      font-weight: 500;
+    }
+    .record-calc {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: #999;
+      padding-top: 6px;
+      border-top: 1px dashed #f0f0f0;
+      margin-top: 6px;
+    }
+    .record-calc span {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .record-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .record-actions button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-edit {
+      background: #e6f7ff;
+      color: #1677ff;
+    }
+    .btn-delete {
+      background: #fff1f0;
+      color: #ff4d4f;
+    }
+    .btn-toggle-invoice {
+      background: #f6ffed;
+      color: #52c41a;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    .empty-state::before {
+      content: "📋";
+      font-size: 48px;
+      display: block;
+      margin-bottom: 12px;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 9999;
+      transition: transform 0.3s;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+    
+    /* 统计卡片 */
+    .stats-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .stats-row {
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+    .stat-item {
+      flex: 1;
+    }
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #999;
+    }
+    .stat-value.blue { color: #1677ff; }
+    .stat-value.green { color: #52c41a; }
+    .stat-value.orange { color: #faad14; }
+    .stat-value.red { color: #ff4d4f; }
+    
+    @media (max-width: 400px) {
+      .form-row {
+        flex-direction: column;
+        gap: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div style="position:relative"><button onclick="window.location.href='/'" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;color:#fff;cursor:pointer;padding:4px 8px;">←</button><h1 style="padding-left:40px;">💰 客户公账登记</h1></div>
+    
+    <!-- 录入表单 -->
+    <div class="form-card">
+      <h3>📝 新增登记</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>日期</label>
+          <input type="date" id="inputDate">
+        </div>
+        <div class="form-group">
+          <label>账户</label>
+          <input type="text" id="inputAccount" value="公账" placeholder="账户名称">
+        </div>
+      </div>
+      
+      <div class="form-group full" style="margin-bottom:14px">
+        <label>客户名称</label>
+        <input type="text" id="inputCustomer" list="customerHistory" placeholder="输入客户名称（可点选历史）">
+        <datalist id="customerHistory"></datalist>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>货款金额（元）</label>
+          <input type="number" id="inputGoodsAmount" placeholder="0.00" step="0.01" oninput="calcPreview()">
+        </div>
+        <div class="form-group">
+          <label>代开点数（%）</label>
+          <select id="inputInvoiceRate" onchange="calcPreview()">
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9" selected>9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- 计算预览 -->
+      <div class="calc-preview" id="calcPreview" style="display:none">
+        <h4>🧮 开票计算</h4>
+        <div class="calc-row">
+          <span class="calc-label">开票金额</span>
+          <span class="calc-value" id="previewInvoiceAmount">¥0</span>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>工厂名称</label>
+          <input type="text" id="inputFactory" list="factoryHistory" placeholder="对应工厂（可点选历史）">
+          <datalist id="factoryHistory"></datalist>
+        </div>
+        <div class="form-group">
+          <label>工厂点数（%）</label>
+          <select id="inputFactoryRate" onchange="calcPreview()">
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="7.5">7.5</option>
+            <option value="8" selected>8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- 完整计算预览 -->
+      <div class="calc-preview" id="calcPreviewFull" style="display:none">
+        <h4>📊 完整计算</h4>
+        <div class="calc-row">
+          <span class="calc-label">客户开票金额</span>
+          <span class="calc-value" id="previewInvoiceAmount2">¥0</span>
+        </div>
+        <div class="calc-row">
+          <span class="calc-label">工厂扣费</span>
+          <span class="calc-value" style="color:#ff4d4f" id="previewFactoryFee">¥0</span>
+        </div>
+        <div class="calc-row">
+          <span class="calc-label">实际到账</span>
+          <span class="calc-value green" id="previewActualAmount">¥0</span>
+        </div>
+      </div>
+      
+      <div class="invoice-toggle">
+        <span>📄 发票状态</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="inputInvoice">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      
+      <button class="btn btn-primary" onclick="addRecord()">✅ 添加记录</button>
+    </div>
+    
+    <!-- 搜索筛选 -->
+    <div class="filter-bar">
+      <div class="filter-row" style="margin-bottom:10px">
+        <input type="text" id="searchInput" placeholder="🔍 搜索客户/工厂" oninput="renderList()">
+        <select id="filterInvoice" onchange="renderList()">
+          <option value="all">全部状态</option>
+          <option value="done">已开票</option>
+          <option value="pending">未开票</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <select id="filterFactory" onchange="renderList()">
+          <option value="all">全部工厂</option>
+        </select>
+        <select id="filterCustomer" onchange="renderList()">
+          <option value="all">全部客户</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- 统计 -->
+    <div class="stats-card">
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-value blue" id="statTotal">0</div>
+          <div class="stat-label">总记录</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value blue" id="statInvoiceAmount">¥0</div>
+          <div class="stat-label">开票总额</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value red" id="statFee">¥0</div>
+          <div class="stat-label">工厂扣费</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value green" id="statActual">¥0</div>
+          <div class="stat-label">实际到账</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 记录列表 -->
+    <div class="record-list">
+      <div class="record-header">
+        <h3>📋 登记记录</h3>
+        <span class="record-count" id="recordCount">0 条</span>
+      </div>
+      <div id="recordContainer"></div>
+    </div>
+  </div>
+  
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // 数据存储
+    const STORAGE_KEY = 'customer_payment_records';
+    const CUSTOMER_HISTORY_KEY = 'customer_payment_customers';
+    const FACTORY_HISTORY_KEY = 'customer_payment_factories';
+    
+    // 获取历史记录
+    function getHistoryList(key) {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    }
+    
+    // 保存历史记录
+    function saveHistoryItem(key, name) {
+      if (!name) return;
+      let list = getHistoryList(key);
+      // 去重，已有的放前面
+      list = list.filter(n => n !== name);
+      list.unshift(name);
+      // 最多保留50个
+      if (list.length > 50) list = list.slice(0, 50);
+      localStorage.setItem(key, JSON.stringify(list));
+    }
+    
+    // 加载历史记录到datalist和筛选框
+    function loadHistory() {
+      const customers = getHistoryList(CUSTOMER_HISTORY_KEY);
+      const factories = getHistoryList(FACTORY_HISTORY_KEY);
+      
+      // 填充datalist
+      const customerDatalist = document.getElementById('customerHistory');
+      customerDatalist.innerHTML = customers.map(c => `<option value="${escapeHtml(c)}">`).join('');
+      
+      const factoryDatalist = document.getElementById('factoryHistory');
+      factoryDatalist.innerHTML = factories.map(f => `<option value="${escapeHtml(f)}">`).join('');
+      
+      // 填充筛选下拉框
+      const filterFactory = document.getElementById('filterFactory');
+      const currentFactoryFilter = filterFactory.value;
+      filterFactory.innerHTML = '<option value="all">全部工厂</option>' + 
+        factories.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+      filterFactory.value = currentFactoryFilter;
+      
+      const filterCustomer = document.getElementById('filterCustomer');
+      const currentCustomerFilter = filterCustomer.value;
+      filterCustomer.innerHTML = '<option value="all">全部客户</option>' + 
+        customers.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      filterCustomer.value = currentCustomerFilter;
+    }
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 设置默认日期为今天
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('inputDate').value = today;
+      
+      // 加载历史记录
+      loadHistory();
+      
+      // 渲染列表
+      renderList();
+    });
+    
+    // 计算预览
+    function calcPreview() {
+      const goodsAmount = parseFloat(document.getElementById('inputGoodsAmount').value) || 0;
+      const invoiceRate = parseFloat(document.getElementById('inputInvoiceRate').value) || 0;
+      const factoryRate = parseFloat(document.getElementById('inputFactoryRate').value) || 0;
+      
+      if (goodsAmount <= 0) {
+        document.getElementById('calcPreview').style.display = 'none';
+        document.getElementById('calcPreviewFull').style.display = 'none';
+        return;
+      }
+      
+      // 开票金额 = 货款 × (1 + 代开点数/100)
+      const invoiceAmount = goodsAmount * (1 + invoiceRate / 100);
+      
+      // 工厂扣费 = 开票金额 × 工厂点数/100
+      const factoryFee = invoiceAmount * factoryRate / 100;
+      
+      // 实际到账 = 开票金额 - 工厂扣费
+      const actualAmount = invoiceAmount - factoryFee;
+      
+      // 显示预览
+      document.getElementById('calcPreview').style.display = 'block';
+      document.getElementById('previewInvoiceAmount').textContent = '¥' + invoiceAmount.toFixed(2);
+      
+      document.getElementById('calcPreviewFull').style.display = 'block';
+      document.getElementById('previewInvoiceAmount2').textContent = '¥' + invoiceAmount.toFixed(2);
+      document.getElementById('previewFactoryFee').textContent = '-¥' + factoryFee.toFixed(2);
+      document.getElementById('previewActualAmount').textContent = '¥' + actualAmount.toFixed(2);
+    }
+    
+    // 获取记录
+    function getRecords() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+    
+    // 保存记录
+    function saveRecords(records) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+    
+    // 添加记录
+    function addRecord() {
+      const date = document.getElementById('inputDate').value;
+      const account = document.getElementById('inputAccount').value.trim();
+      const customer = document.getElementById('inputCustomer').value.trim();
+      const goodsAmount = parseFloat(document.getElementById('inputGoodsAmount').value) || 0;
+      const invoiceRate = parseFloat(document.getElementById('inputInvoiceRate').value) || 8;
+      const factory = document.getElementById('inputFactory').value.trim();
+      const factoryRate = parseFloat(document.getElementById('inputFactoryRate').value) || 7;
+      const invoice = document.getElementById('inputInvoice').checked;
+      
+      if (!customer) {
+        showToast('请输入客户名称');
+        return;
+      }
+      if (goodsAmount <= 0) {
+        showToast('请输入货款金额');
+        return;
+      }
+      
+      // 计算
+      const invoiceAmount = goodsAmount * (1 + invoiceRate / 100);
+      const factoryFee = invoiceAmount * factoryRate / 100;
+      const actualAmount = invoiceAmount - factoryFee;
+      
+      const records = getRecords();
+      records.unshift({
+        id: Date.now(),
+        date: date,
+        account: account || '公账',
+        customer: customer,
+        goodsAmount: goodsAmount,
+        invoiceRate: invoiceRate,
+        invoiceAmount: invoiceAmount,
+        factory: factory,
+        factoryRate: factoryRate,
+        factoryFee: factoryFee,
+        actualAmount: actualAmount,
+        invoice: invoice,
+        createTime: new Date().toISOString()
+      });
+      saveRecords(records);
+      
+      // 保存客户和工厂到历史记录
+      saveHistoryItem(CUSTOMER_HISTORY_KEY, customer);
+      if (factory) saveHistoryItem(FACTORY_HISTORY_KEY, factory);
+      loadHistory(); // 刷新datalist和筛选框
+      
+      // 清空表单（保留日期、账户和默认点数）
+      document.getElementById('inputCustomer').value = '';
+      document.getElementById('inputGoodsAmount').value = '';
+      document.getElementById('inputFactory').value = '';
+      document.getElementById('inputInvoice').checked = false;
+      document.getElementById('calcPreview').style.display = 'none';
+      document.getElementById('calcPreviewFull').style.display = 'none';
+      
+      renderList();
+      showToast('✅ 记录添加成功');
+    }
+    
+    // 删除记录
+    function deleteRecord(id) {
+      if (!confirm('确定删除这条记录吗？')) return;
+      const records = getRecords().filter(r => r.id !== id);
+      saveRecords(records);
+      renderList();
+      showToast('已删除');
+    }
+    
+    // 切换开票状态
+    function toggleInvoice(id) {
+      const records = getRecords();
+      const record = records.find(r => r.id === id);
+      if (record) {
+        record.invoice = !record.invoice;
+        saveRecords(records);
+        renderList();
+        showToast(record.invoice ? '✅ 已标记开票' : '⏳ 已标记未开票');
+      }
+    }
+    
+    // 渲染列表
+    function renderList() {
+      let records = getRecords();
+      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filter = document.getElementById('filterInvoice').value;
+      const filterFactory = document.getElementById('filterFactory').value;
+      const filterCustomer = document.getElementById('filterCustomer').value;
+      
+      // 搜索筛选
+      if (search) {
+        records = records.filter(r => 
+          r.customer.toLowerCase().includes(search) ||
+          (r.factory && r.factory.toLowerCase().includes(search))
+        );
+      }
+      if (filter === 'done') {
+        records = records.filter(r => r.invoice);
+      } else if (filter === 'pending') {
+        records = records.filter(r => !r.invoice);
+      }
+      // 工厂筛选
+      if (filterFactory !== 'all') {
+        records = records.filter(r => r.factory === filterFactory);
+      }
+      // 客户筛选
+      if (filterCustomer !== 'all') {
+        records = records.filter(r => r.customer === filterCustomer);
+      }
+      
+      // 统计
+      const allRecords = getRecords();
+      const totalInvoiceAmount = allRecords.reduce((sum, r) => sum + (r.invoiceAmount || 0), 0);
+      const totalFee = allRecords.reduce((sum, r) => sum + (r.factoryFee || 0), 0);
+      const totalActual = allRecords.reduce((sum, r) => sum + (r.actualAmount || 0), 0);
+      
+      document.getElementById('statTotal').textContent = allRecords.length;
+      document.getElementById('statInvoiceAmount').textContent = '¥' + totalInvoiceAmount.toFixed(0);
+      document.getElementById('statFee').textContent = '¥' + totalFee.toFixed(0);
+      document.getElementById('statActual').textContent = '¥' + totalActual.toFixed(0);
+      
+      // 渲染
+      const container = document.getElementById('recordContainer');
+      document.getElementById('recordCount').textContent = records.length + ' 条';
+      
+      if (records.length === 0) {
+        container.innerHTML = '<div class="empty-state">暂无记录</div>';
+        return;
+      }
+      
+      container.innerHTML = records.map(r => `
+        <div class="record-item ${r.invoice ? 'invoice-done' : ''}">
+          <div class="record-top">
+            <span class="customer-name">${escapeHtml(r.customer)}</span>
+            <span class="invoice-badge ${r.invoice ? 'done' : 'pending'}">${r.invoice ? '已开票' : '未开票'}</span>
+          </div>
+          <div class="record-info">
+            <span>📅 ${r.date}</span>
+            <span>🏦 ${escapeHtml(r.account)}</span>
+          </div>
+          <div class="record-info">
+            <span class="amount">💰 开票 ¥${(r.invoiceAmount || 0).toFixed(2)}</span>
+            <span class="fee">📉 扣费 ¥${(r.factoryFee || 0).toFixed(2)}</span>
+            <span class="actual">💵 到账 ¥${(r.actualAmount || 0).toFixed(2)}</span>
+          </div>
+          <div class="record-calc">
+            <span>货款 ¥${(r.goodsAmount || 0).toFixed(0)}</span>
+            <span>× 代开${r.invoiceRate || 0}%</span>
+            ${r.factory ? `<span>→ ${escapeHtml(r.factory)} ${r.factoryRate || 0}%</span>` : ''}
+          </div>
+          <div class="record-actions">
+            <button class="btn-toggle-invoice" onclick="toggleInvoice(${r.id})">${r.invoice ? '⏳ 标记未开' : '✅ 标记已开'}</button>
+            <button class="btn-delete" onclick="deleteRecord(${r.id})">🗑️ 删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // HTML转义
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Toast提示
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+</html>

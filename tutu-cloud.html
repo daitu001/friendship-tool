@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>土土协作</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+    padding: 12px;
+  }
+  .container {
+    max-width: 360px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .header {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    padding: 16px;
+    text-align: center;
+    color: #fff;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .menu {
+    padding: 12px;
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    background: #fafafa;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    border: 1px solid #e8e8e8;
+  }
+  .menu-item:last-child {
+    margin-bottom: 0;
+  }
+  .menu-item:active {
+    background: #f0f0f0;
+  }
+  .menu-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-right: 12px;
+    color: #fff;
+  }
+  .menu-item:nth-child(1) .menu-icon { background: #667eea; }
+  .menu-item:nth-child(2) .menu-icon { background: #f5576c; }
+  .menu-item:nth-child(3) .menu-icon { background: #4facfe; }
+  .menu-item:nth-child(4) .menu-icon { background: #43e97b; }
+  .menu-text {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .menu-arrow {
+    color: #ccc;
+    font-size: 18px;
+  }
+  .footer {
+    text-align: center;
+    padding: 10px;
+    background: #fafafa;
+    border-top: 1px solid #e8e8e8;
+    font-size: 11px;
+    color: #999;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🐸 土土协作</h1>
+    </div>
+    
+    <div class="menu">
+      <a href="https://youyi-01mishu.oss-cn-guangzhou.aliyuncs.com/friendship-tool/sample-report.html" class="menu-item">
+        <div class="menu-icon">📋</div>
+        <div class="menu-text">样布报单</div>
+        <div class="menu-arrow">›</div>
+      </a>
+      
+      <a href="https://youyi-01mishu.oss-cn-guangzhou.aliyuncs.com/friendship-tool/v50.html" class="menu-item">
+        <div class="menu-icon">📦</div>
+        <div class="menu-text">大货报单</div>
+        <div class="menu-arrow">›</div>
+      </a>
+      
+      <a href="https://youyi-01mishu.oss-cn-guangzhou.aliyuncs.com/friendship-tool/customer-payment.html" class="menu-item">
+        <div class="menu-icon">💰</div>
+        <div class="menu-text">客户公账</div>
+        <div class="menu-arrow">›</div>
+      </a>
+      
+      <a href="https://youyi-01mishu.oss-cn-guangzhou.aliyuncs.com/friendship-tool/index.html" class="menu-item">
+        <div class="menu-icon">📏</div>
+        <div class="menu-text">米数换算</div>
+        <div class="menu-arrow">›</div>
+      </a>
+    </div>
+    
+    <div class="footer">
+      云端版 v2.0.0
+    </div>
+  </div>
+</body>
+</html>

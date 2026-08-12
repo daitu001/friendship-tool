@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>客户收款记录表</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; padding-bottom: 80px; }
+.header { background: linear-gradient(135deg, #1a3a5c 0%, #2c5f8a 100%); color: #fff; padding: 20px 16px 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+.header h1 { font-size: 20px; font-weight: 600; letter-spacing: 1px; }
+.header .subtitle { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+.container { padding: 12px; max-width: 600px; margin: 0 auto; }
+.card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+.card-title { font-size: 15px; font-weight: 600; color: #1a3a5c; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.card-title .icon { font-size: 18px; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+.form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 15px; background: #fafafa; transition: border-color 0.2s; outline: none; }
+.form-group input:focus, .form-group select:focus { border-color: #2c5f8a; background: #fff; }
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+.btn-primary { width: 100%; padding: 12px; background: linear-gradient(135deg, #1a3a5c 0%, #2c5f8a 100%); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; letter-spacing: 1px; }
+.btn-primary:active { opacity: 0.85; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-item { background: linear-gradient(135deg, #f8faff 0%, #eef3fa 100%); border-radius: 10px; padding: 12px; text-align: center; border: 1px solid #e8eef6; }
+.stat-item .label { font-size: 12px; color: #888; margin-bottom: 4px; }
+.stat-item .value { font-size: 18px; font-weight: 700; color: #1a3a5c; }
+.stat-item .value.green { color: #16a34a; }
+.stat-item .value.red { color: #dc2626; }
+.stat-item .count { font-size: 11px; color: #999; margin-top: 2px; }
+.search-bar { position: relative; margin-bottom: 10px; }
+.search-bar input { width: 100%; padding: 10px 12px 10px 36px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: #fafafa; outline: none; }
+.search-bar input:focus { border-color: #2c5f8a; background: #fff; }
+.search-bar .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #aaa; }
+.record-list { list-style: none; }
+.record-item { background: #fafbfc; border-radius: 10px; padding: 12px; margin-bottom: 8px; border: 1px solid #eef0f3; position: relative; transition: background 0.2s; }
+.record-item:active { background: #f0f2f5; }
+.record-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.record-customer { font-size: 15px; font-weight: 600; color: #1a3a5c; flex: 1; }
+.record-amount { font-size: 17px; font-weight: 700; color: #16a34a; }
+.record-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.record-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #e8f0fe; color: #2c5f8a; font-weight: 500; }
+.record-date { font-size: 12px; color: #999; }
+.record-note { font-size: 12px; color: #777; margin-top: 4px; font-style: italic; }
+.record-del { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 18px; color: #ccc; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+.record-del:active { color: #dc2626; background: #fef2f2; }
+.empty-state { text-align: center; padding: 30px 16px; color: #bbb; }
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 8px; }
+.empty-state p { font-size: 14px; }
+.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e8e8e8; padding: 10px 12px; display: flex; gap: 8px; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+.bottom-bar button { flex: 1; padding: 10px 6px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1.5px solid #e0e0e0; background: #fff; color: #555; transition: all 0.2s; }
+.bottom-bar button:active { transform: scale(0.97); }
+.bottom-bar .btn-copy { background: linear-gradient(135deg, #1a3a5c 0%, #2c5f8a 100%); color: #fff; border: none; }
+.bottom-bar .btn-export { border-color: #2c5f8a; color: #2c5f8a; }
+.bottom-bar .btn-clear { border-color: #dc2626; color: #dc2626; }
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.78); color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 14px; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+.toast.show { opacity: 1; }
+.confirm-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: center; justify-content: center; }
+.confirm-box { background: #fff; border-radius: 14px; padding: 24px 20px 16px; width: 80%; max-width: 320px; text-align: center; }
+.confirm-box p { font-size: 15px; color: #333; margin-bottom: 18px; line-height: 1.5; }
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-btns button { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+.confirm-btns .cancel { background: #f0f0f0; color: #666; }
+.confirm-btns .ok { background: #dc2626; color: #fff; }
+.amount-preview { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #999; pointer-events: none; }
+.input-wrap { position: relative; }
+@media (min-width: 600px) {
+  .container { padding: 16px; }
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>💰 客户收款记录表</h1>
+  <div class="subtitle">面料行业 · 客户收款管理</div>
+</div>
+<div class="container">
+  <div class="card">
+    <div class="card-title"><span class="icon">📝</span> 录入收款</div>
+    <div class="form-group">
+      <label>客户名称 *</label>
+      <input type="text" id="customer" placeholder="例：金丝玉帛 马小姐" autocomplete="off">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>收款金额 *</label>
+        <div class="input-wrap">
+          <input type="number" id="amount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>收款日期</label>
+        <input type="date" id="date">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>收款方式</label>
+        <select id="method">
+          <option value="微信">微信</option>
+          <option value="支付宝">支付宝</option>
+          <option value="银行转账">银行转账</option>
+          <option value="现金">现金</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>备注（选填）</label>
+        <input type="text" id="note" placeholder="备注信息">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="addRecord()">✅ 添加记录</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">📊</span> 收款汇总</div>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="label">今日收款</div>
+        <div class="value green" id="statToday">¥0.00</div>
+        <div class="count" id="statTodayCount">0 笔</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">本月累计</div>
+        <div class="value green" id="statMonth">¥0.00</div>
+        <div class="count" id="statMonthCount">0 笔</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">累计总额</div>
+        <div class="value" id="statTotal">¥0.00</div>
+        <div class="count" id="statTotalCount">0 笔</div>
+      </div>
+      <div class="stat-item">
+        <div class="label">总记录数</div>
+        <div class="value" id="statRecords">0</div>
+        <div class="count">条记录</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> 收款记录</div>
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="搜索客户名称..." oninput="renderList()">
+    </div>
+    <ul class="record-list" id="recordList"></ul>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="btn-copy" onclick="copySummary()">📋 复制报表</button>
+  <button class="btn-export" onclick="exportCSV()">📥 导出数据</button>
+  <button class="btn-clear" onclick="confirmClear()">🗑 清空</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'payment_collection_records';
+let records = [];
+
+function init() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) { try { records = JSON.parse(saved); } catch(e) { records = []; } }
+  document.getElementById('date').value = todayStr();
+  updateStats();
+  renderList();
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function formatMoney(n) {
+  return parseFloat(n).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function showToast(msg, dur) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur || 1800);
+}
+
+function addRecord() {
+  const customer = document.getElementById('customer').value.trim();
+  const amount = parseFloat(document.getElementById('amount').value);
+  const date = document.getElementById('date').value;
+  const method = document.getElementById('method').value;
+  const note = document.getElementById('note').value.trim();
+
+  if (!customer) { showToast('请输入客户名称'); return; }
+  if (!amount || amount <= 0) { showToast('请输入有效金额'); return; }
+  if (!date) { showToast('请选择日期'); return; }
+
+  records.push({
+    id: genId(),
+    customer,
+    amount: Math.round(amount * 100) / 100,
+    date,
+    method,
+    note,
+    createdAt: new Date().toISOString()
+  });
+  save();
+  updateStats();
+  renderList();
+
+  document.getElementById('customer').value = '';
+  document.getElementById('amount').value = '';
+  document.getElementById('note').value = '';
+  showToast('✅ 已添加 ¥' + formatMoney(amount));
+}
+
+function deleteRecord(id) {
+  showConfirm('确定要删除这条收款记录吗？', () => {
+    records = records.filter(r => r.id !== id);
+    save();
+    updateStats();
+    renderList();
+    showToast('已删除');
+  });
+}
+
+function updateStats() {
+  const today = todayStr();
+  const now = new Date();
+  const monthStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  let todaySum = 0, todayCount = 0, monthSum = 0, monthCount = 0, totalSum = 0;
+
+  records.forEach(r => {
+    totalSum += r.amount;
+    if (r.date === today) { todaySum += r.amount; todayCount++; }
+    if (r.date.startsWith(monthStr)) { monthSum += r.amount; monthCount++; }
+  });
+
+  document.getElementById('statToday').textContent = '¥' + formatMoney(todaySum);
+  document.getElementById('statTodayCount').textContent = todayCount + ' 笔';
+  document.getElementById('statMonth').textContent = '¥' + formatMoney(monthSum);
+  document.getElementById('statMonthCount').textContent = monthCount + ' 笔';
+  document.getElementById('statTotal').textContent = '¥' + formatMoney(totalSum);
+  document.getElementById('statTotalCount').textContent = records.length + ' 笔';
+  document.getElementById('statRecords').textContent = records.length;
+}
+
+function renderList() {
+  const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+  const sorted = [...records].sort((a, b) => {
+    if (b.date !== a.date) return b.date.localeCompare(a.date);
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  const filtered = keyword ? sorted.filter(r => r.customer.toLowerCase().includes(keyword)) : sorted;
+  const list = document.getElementById('recordList');
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>' + (keyword ? '未找到匹配的记录' : '暂无收款记录') + '</p></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(r => `
+    <li class="record-item">
+      <div class="record-top">
+        <span class="record-customer">${esc(r.customer)}</span>
+        <span class="record-amount">+¥${formatMoney(r.amount)}</span>
+      </div>
+      <div class="record-meta">
+        <span class="record-tag">${esc(r.method)}</span>
+        <span class="record-date">📅 ${r.date}</span>
+      </div>
+      ${r.note ? '<div class="record-note">💬 ' + esc(r.note) + '</div>' : ''}
+      <button class="record-del" onclick="deleteRecord('${r.id}')" title="删除">×</button>
+    </li>
+  `).join('');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function showConfirm(msg, onOk) {
+  const mask = document.createElement('div');
+  mask.className = 'confirm-mask';
+  mask.innerHTML = `
+    <div class="confirm-box">
+      <p>${msg}</p>
+      <div class="confirm-btns">
+        <button class="cancel">取消</button>
+        <button class="ok">确定</button>
+      </div>
+    </div>`;
+  document.body.appendChild(mask);
+  mask.querySelector('.cancel').onclick = () => mask.remove();
+  mask.querySelector('.ok').onclick = () => { mask.remove(); onOk(); };
+}
+
+function copySummary() {
+  if (records.length === 0) { showToast('暂无记录可复制'); return; }
+  const today = todayStr();
+  const now = new Date();
+  const monthStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  let todaySum = 0, todayCount = 0, monthSum = 0, monthCount = 0, totalSum = 0;
+  const todayRecords = [];
+
+  records.forEach(r => {
+    totalSum += r.amount;
+    if (r.date === today) { todaySum += r.amount; todayCount++; todayRecords.push(r); }
+    if (r.date.startsWith(monthStr)) { monthSum += r.amount; monthCount++; }
+  });
+
+  let text = `📋 收款汇总\n日期：${today}\n━━━━━━━━━━━━━━\n`;
+  text += `今日收款：¥${formatMoney(todaySum)}（${todayCount}笔）\n`;
+  text += `本月累计：¥${formatMoney(monthSum)}（${monthCount}笔）\n`;
+  text += `累计总额：¥${formatMoney(totalSum)}\n`;
+  text += `总记录：${records.length}笔\n`;
+  text += `━━━━━━━━━━━━━━\n`;
+
+  if (todayRecords.length > 0) {
+    text += `今日明细：\n`;
+    todayRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    todayRecords.forEach((r, i) => {
+      text += `${i+1}. ${r.customer} - ¥${formatMoney(r.amount)}（${r.method}）`;
+      if (r.note) text += ` [${r.note}]`;
+      text += `\n`;
+    });
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 已复制到剪贴板'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('📋 已复制到剪贴板');
+  }
+}
+
+function exportCSV() {
+  if (records.length === 0) { showToast('暂无数据可导出'); return; }
+  const header = '客户名称,收款金额,收款日期,收款方式,备注\n';
+  const rows = records.map(r =>
+    `"${r.customer.replace(/"/g,'""')}","${r.amount.toFixed(2)}","${r.date}","${r.method}","${(r.note||'').replace(/"/g,'""')}"`
+  ).join('\n');
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + header + rows], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `收款记录_${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 已导出CSV文件');
+}
+
+function confirmClear() {
+  if (records.length === 0) { showToast('暂无记录'); return; }
+  showConfirm(`确定要清空全部 ${records.length} 条收款记录吗？此操作不可恢复！`, () => {
+    records = [];
+    save();
+    updateStats();
+    renderList();
+    showToast('已清空所有记录');
+  });
+}
+
+init();
+</script>
+</body>
+</html>
