@@ -1606,18 +1606,6 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
             <button onclick="cmSaveCustomMapping()" style="padding:5px 10px;background:#4CAF50;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;white-space:nowrap;">💾 保存对应</button>
           </div>
         </div>
-        <!-- 第二排：自编色号 → 工厂色号 -->
-        <div style="display:flex;gap:4px;align-items:flex-end;">
-          <div style="flex:1;">
-            <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">自编色号</label>
-            <input type="text" id="cmSelfColorNo" placeholder="1#" list="factoryColorSuggestList" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;" oninput="onCmColorNoInput()">
-          </div>
-          <div style="padding:0 2px;padding-bottom:6px;font-size:14px;color:#11998e;font-weight:bold;">→</div>
-          <div style="flex:1;">
-            <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">工厂色号</label>
-            <input type="text" id="cmSelfFactoryColor" placeholder="80555-1" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;">
-          </div>
-        </div>
         <!-- 已保存的对应关系列表 -->
         <div id="cmMappingList" style="margin-top:8px;max-height:150px;overflow-y:auto;"></div>
       </div>
@@ -3249,6 +3237,7 @@ function cmSelectProduct(code) {
       var colorNo = i + '#';
       html += '<div class="cm-color-row">' +
         '<div class="cm-customer-color">' + colorNo + '</div>' +
+        '<div style="padding:0 6px;font-size:14px;color:#11998e;font-weight:bold;">→</div>' +
         '<input class="cm-factory-input" type="text" value="" data-cc="' + colorNo + '" placeholder="输入工厂色号" onblur="cmAutoSaveColor(this)">' +
         '<button class="cm-del-btn" onclick="cmDelRow(this)" title="删除">✕</button>' +
         '</div>';
@@ -3270,6 +3259,7 @@ function cmSelectProduct(code) {
 function cmBuildRow(customerColor, factoryColor) {
   return '<div class="cm-color-row">' +
     '<div class="cm-customer-color">' + cmEsc(customerColor) + '</div>' +
+    '<div style="padding:0 6px;font-size:14px;color:#11998e;font-weight:bold;">→</div>' +
     '<input class="cm-factory-input" type="text" value="' + cmEsc(factoryColor) + '" data-cc="' + cmEsc(customerColor) + '" placeholder="工厂色号" onblur="cmAutoSaveColor(this)">' +
     '<button class="cm-del-btn" onclick="cmDelRow(this)" title="删除">✕</button>' +
     '</div>';
@@ -3327,17 +3317,9 @@ function cmSaveCustomMapping() {
   var colorCardNo = document.getElementById('cmSelfColorCardNo').value.trim();
   var factoryName = document.getElementById('cmSelfFactoryName').value.trim();
   var factoryCode = document.getElementById('cmSelfFactoryCode').value.trim();
-  var colorNo = document.getElementById('cmSelfColorNo').value.trim();
-  var factoryColor = document.getElementById('cmSelfFactoryColor').value.trim();
   if (!colorCardNo || !factoryName || !factoryCode) {
     showToast('色卡编号、工厂名称、工厂编号为必填项');
     return;
-  }
-  // 保存到factoryColorMap
-  if (factoryCode && colorNo) {
-    if (typeof FriendshipSync !== 'undefined' && FriendshipSync.syncFactoryColorMap) {
-      FriendshipSync.syncFactoryColorMap(factoryCode, colorNo, colorCardNo, factoryColor);
-    }
   }
   // 保存工厂名称映射
   if (factoryName && factoryCode) {
@@ -3351,8 +3333,6 @@ function cmSaveCustomMapping() {
     colorCardNo: colorCardNo,
     factoryName: factoryName,
     factoryCode: factoryCode,
-    colorNo: colorNo,
-    factoryColor: factoryColor,
     source: '手动编',
     time: new Date().toLocaleString()
   });
@@ -3367,9 +3347,10 @@ function cmSaveCustomMapping() {
   if (colorCardNo) {
     cmSelectProduct(colorCardNo);
   }
-  // 清空输入（保留色卡编号方便继续填色号）
-  document.getElementById('cmSelfColorNo').value = '';
-  document.getElementById('cmSelfFactoryColor').value = '';
+  // 清空输入
+  document.getElementById('cmSelfColorCardNo').value = '';
+  document.getElementById('cmSelfFactoryName').value = '';
+  document.getElementById('cmSelfFactoryCode').value = '';
 }
 
 // 加载并显示已保存的对应关系列表
