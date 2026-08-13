@@ -1391,7 +1391,7 @@ if (typeof window !== 'undefined') {
       Object.keys(shared.products).forEach(function(code) {
         if (!userProducts[code]) {
           var p = shared.products[code];
-          userProducts[code] = [{s: p.productName || code, f: p.factory || '', fc: p.factoryCode || '', p: ''}];
+          userProducts[code] = [{s: p.s || p.productName || code, f: p.f || p.factory || p.factoryName || '', fc: p.fc || p.factoryCode || '', p: p.p || ''}];
           productsUpdated = true;
         }
       });
@@ -1465,7 +1465,7 @@ function refreshAfterSync() {
         Object.keys(shared.products).forEach(function(code) {
           if (!userProducts[code]) {
             var p = shared.products[code];
-            userProducts[code] = [{s: p.productName || code, f: p.factory || '', fc: p.factoryCode || '', p: ''}];
+            userProducts[code] = [{s: p.s || p.productName || code, f: p.f || p.factory || p.factoryName || '', fc: p.fc || p.factoryCode || '', p: p.p || ''}];
           }
         });
         localStorage.setItem('userProducts', JSON.stringify(userProducts));
@@ -1588,7 +1588,7 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
 
       <!-- 自编对应关系区域 - V4布局 -->
       <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
-        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.10</span></div>
+        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.11</span></div>
         <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 | 保存按钮 -->
         <div style="display:flex;gap:4px;margin-bottom:6px;align-items:flex-end;">
           <div style="flex:0.8;">
@@ -1737,6 +1737,24 @@ function getMergedDB() {
   for (var k in PRODUCT_DB) {
     merged[k] = PRODUCT_DB[k].slice();
   }
+  // 合并 FriendshipSync 云端共享产品（同步存的是 {f,fc,s}，老数据可能是 {productName,factory,factoryCode}，两种字段名都兼容）
+  try {
+    if (typeof FriendshipSync !== 'undefined' && FriendshipSync.getSharedData) {
+      var sp = (FriendshipSync.getSharedData().products) || {};
+      for (var sk in sp) {
+        var spv = sp[sk] || {};
+        var norm = {
+          f: spv.f || spv.factory || spv.factoryName || '',
+          fc: spv.fc || spv.factoryCode || '',
+          s: spv.s || spv.productName || '',
+          p: spv.p || ''
+        };
+        if (!merged[sk]) merged[sk] = [];
+        var spExists = merged[sk].some(function(it){ return it.f === norm.f && it.fc === norm.fc; });
+        if (!spExists) merged[sk].push(norm);
+      }
+    }
+  } catch(e) { console.error(e); }
   for (var k in userProducts) {
     if (!merged[k]) merged[k] = [];
     // Check if already exists
@@ -3440,6 +3458,13 @@ function cmSaveCustomMapping() {
       updatedAt: new Date().toISOString()
     });
   }
+  // 同时写入 userProducts（getMergedDB 读取源），让本机搜索立即生效；直接覆盖，以用户显式保存为准
+  try {
+    var up = JSON.parse(localStorage.getItem('userProducts') || '{}');
+    up[colorCardNo] = [{ f: factoryName, fc: factoryCode, s: '自编', p: '' }];
+    localStorage.setItem('userProducts', JSON.stringify(up));
+    if (typeof userProducts !== 'undefined') userProducts = up;
+  } catch(e) { console.error(e); }
   // 保存到本地映射列表
   var localList = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
   localList.push({
