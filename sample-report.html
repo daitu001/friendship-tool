@@ -1483,16 +1483,17 @@ function refreshAfterSync() {
 
 </script>
 </head>
+<body>
 <script>
 fetch("product-data.json").then(r=>r.json()).then(d=>{PRODUCT_DB=d;console.log("产品数据加载完成");}).catch(e=>console.error("加载产品数据失败",e));
 </script>
 <script>
 fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.log("颜色数据加载完成");}).catch(e=>console.error("加载颜色数据失败",e));
 </script>
-<body>
+
 
 <div class="header">
-  <button onclick="window.location.href='index.html'" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;color:#667eea;cursor:pointer;padding:4px 8px;">←</button>
+  <button onclick="window.location.href='https://daitu001.github.io/friendship-tool/index.html'" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:22px;color:#667eea;cursor:pointer;padding:4px 8px;">←</button>
   <h1 style="padding-left:40px;">📋 报样布工具</h1>
   <div class="subtitle">布料行业 · 样布管理</div>
   <div style="text-align:center;display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -1587,12 +1588,12 @@ fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.lo
 
       <!-- 自编对应关系区域 - V4布局 -->
       <div class="cm-custom-mapping" id="cmCustomMapping" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;margin:8px 0;">
-        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.7</span></div>
+        <div style="font-size:12px;color:#666;font-weight:600;margin-bottom:8px;">📌 自编对应关系（手动编）<span style="font-size:10px;color:#4CAF50;font-weight:400;margin-left:6px;">v2.1.9</span></div>
         <!-- 第一排：色卡编号 | 工厂名称 | 工厂编号 | 保存按钮 -->
         <div style="display:flex;gap:4px;margin-bottom:6px;align-items:flex-end;">
           <div style="flex:0.8;">
             <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">色卡编号<span style="color:#ff4d4f;">*</span></label>
-            <input type="text" id="cmSelfColorCardNo" placeholder="80001" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;">
+            <input type="text" id="cmSelfColorCardNo" placeholder="80001" oninput="cmCheckCloudExists()" onblur="cmCheckCloudExists()" style="width:100%;padding:5px 6px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;box-sizing:border-box;outline:none;">
           </div>
           <div style="flex:0.8;">
             <label style="font-size:10px;color:#999;display:block;margin-bottom:2px;">工厂名称<span style="color:#ff4d4f;">*</span></label>
@@ -3320,12 +3321,106 @@ function onCmColorNoInput() {
 }
 
 // 保存自编对应关系到OSS
+// ===== 云端已有资料检测 =====
+var cmCloudMatch = null; // 缓存匹配到的云端数据
+function cmCheckCloudExists() {
+  var code = document.getElementById('cmSelfColorCardNo').value.trim();
+  cmCloudMatch = null;
+  if (!code) return;
+  try {
+    var entries = [];
+    // 1. 查本地+云端产品表
+    var db = (typeof getMergedDB === 'function') ? getMergedDB() : (PRODUCT_DB || {});
+    if (db[code] && db[code].length > 0) entries = entries.concat(db[code]);
+    // 2. 查色号管理已保存的对应列表
+    try {
+      var maps = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
+      maps.forEach(function(m){
+        if (m.colorCardNo === code) entries.push({ f: m.factoryName || '', fc: m.factoryCode || '', s: m.source || '手动编', p: '' });
+      });
+    } catch(e) {}
+    // 3. 查云端共享数据
+    if (typeof FriendshipSync !== 'undefined' && FriendshipSync.getSharedData) {
+      var shared = FriendshipSync.getSharedData();
+      if (shared.products && shared.products[code]) {
+        var sp = shared.products[code];
+        entries.push({ f: sp.f || sp.factoryName || '', fc: sp.fc || sp.factoryCode || '', s: sp.s || '云端', p: sp.p || '' });
+      }
+    }
+    if (entries.length === 0) return;
+    // 去重
+    var seen = {};
+    entries = entries.filter(function(e){
+      var key = e.f + '|' + e.fc;
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+    cmCloudMatch = entries;
+    var names = entries.map(function(e){ return e.f + '(' + e.fc + ')'; }).join('、');
+    if (names.length > 30) names = names.slice(0, 30) + '…';
+    // 弹确认框：是否跳入修改颜色界面
+    var goEdit = confirm('⚠️ 该编号云端已有资料：' + names + '\n\n是否跳入修改颜色界面？\n（是=调出已有色号修改 / 否=退出修改）');
+    if (goEdit) {
+      // 调出颜色修改界面
+      if (typeof cmSelectProduct === 'function') {
+        cmSelectProduct(code);
+        showToast('已调入 ' + code + ' 的色号数据，可直接修改');
+      }
+    } else {
+      // 退出修改：清空输入框
+      document.getElementById('cmSelfColorCardNo').value = '';
+      document.getElementById('cmSelfFactoryName').value = '';
+      document.getElementById('cmSelfFactoryCode').value = '';
+      showToast('已退出修改');
+    }
+  } catch(e) { console.error(e); }
+}
+function cmFillFromCloud() {
+  if (!cmCloudMatch || cmCloudMatch.length === 0) return;
+  var e = cmCloudMatch[0];
+  document.getElementById('cmSelfFactoryName').value = e.f || '';
+  document.getElementById('cmSelfFactoryCode').value = e.fc || '';
+  var tip = document.getElementById('cmCloudTip');
+  if (tip) tip.style.display = 'none';
+  showToast('已填入云端资料：' + (e.f||'') + ' ' + (e.fc||''));
+}
+
 function cmSaveCustomMapping() {
   var colorCardNo = document.getElementById('cmSelfColorCardNo').value.trim();
   var factoryName = document.getElementById('cmSelfFactoryName').value.trim();
   var factoryCode = document.getElementById('cmSelfFactoryCode').value.trim();
   if (!colorCardNo || !factoryName || !factoryCode) {
     showToast('色卡编号、工厂名称、工厂编号为必填项');
+    return;
+  }
+  // 只认色卡编号：云端/本地已有该编号就拦截，不能重复建立
+  var dupExists = false;
+  try {
+    var maps0 = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
+    if (maps0.some(function(m){ return m.colorCardNo === colorCardNo; })) dupExists = true;
+  } catch(e) {}
+  if (!dupExists) {
+    try {
+      var db0 = (typeof getMergedDB === 'function') ? getMergedDB() : (PRODUCT_DB || {});
+      if (db0[colorCardNo] && db0[colorCardNo].length > 0) dupExists = true;
+    } catch(e) {}
+  }
+  if (!dupExists && typeof FriendshipSync !== 'undefined' && FriendshipSync.getSharedData) {
+    try {
+      var shared0 = FriendshipSync.getSharedData();
+      if (shared0.products && shared0.products[colorCardNo]) dupExists = true;
+    } catch(e) {}
+  }
+  if (dupExists) {
+    var goEdit = confirm('⚠️ 色卡编号 ' + colorCardNo + ' 云端已存在，不能重复建立\n\n是否进入修改颜色界面？\n（是=调出已有色号修改 / 否=退出）');
+    if (goEdit && typeof cmSelectProduct === 'function') {
+      cmSelectProduct(colorCardNo);
+    } else {
+      document.getElementById('cmSelfColorCardNo').value = '';
+      document.getElementById('cmSelfFactoryName').value = '';
+      document.getElementById('cmSelfFactoryCode').value = '';
+    }
     return;
   }
   // 保存工厂名称映射
@@ -3345,15 +3440,6 @@ function cmSaveCustomMapping() {
       updatedAt: new Date().toISOString()
     });
   }
-  // 同时写入 userProducts（getMergedDB 读取源），让本机搜索立即生效
-  try {
-    var up = JSON.parse(localStorage.getItem('userProducts') || '{}');
-    if (!up[colorCardNo]) {
-      up[colorCardNo] = [{ f: factoryName, fc: factoryCode, s: '自编', p: '' }];
-      localStorage.setItem('userProducts', JSON.stringify(up));
-      if (typeof userProducts !== 'undefined') userProducts = up;
-    }
-  } catch(e) { console.error(e); }
   // 保存到本地映射列表
   var localList = JSON.parse(localStorage.getItem('cmCustomMappings') || '[]');
   localList.push({
