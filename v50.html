@@ -608,7 +608,7 @@ function initSharedOSS() {
       accessKeySecret: OSS_CONFIG_SHARED.accessKeySecret,
       bucket: OSS_CONFIG_SHARED.bucket,
       endpoint: OSS_CONFIG_SHARED.endpoint,
-      secure: false
+      secure: true
     });
     console.log('[SharedSync] OSS客户端初始化成功');
   } catch(e) {
@@ -3056,7 +3056,7 @@ function initOSS() {
       accessKeySecret: OSS_CONFIG.accessKeySecret,
       bucket: OSS_CONFIG.bucket,
       endpoint: OSS_CONFIG.endpoint,
-      secure: false
+      secure: true
     });
     setCloudStatus('☁ 已连接', '');
   } catch(e) {
