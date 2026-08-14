@@ -1077,7 +1077,7 @@ window.addEventListener('load',function(){
 
 // ===== 阿里云 OSS 配置 =====
 // ===== 工具版本号 =====
-const TOOLS_VERSION = 130;
+const TOOLS_VERSION = 131;
 
 
 
@@ -3657,6 +3657,7 @@ init();
 // ===== 产品搜索功能 =====
 
 // Build search index: all codes as array for fast prefix matching
+var PRODUCT_DB = {};
 const PRODUCT_CODES = Object.keys(PRODUCT_DB).sort();
 
 // ===== 从OSS异步加载最新产品数据 =====
