@@ -3259,10 +3259,10 @@ img, video { max-width: 100%; }
 </div>
 
 <script>
-fetch("product-data.json").then(r=>r.json()).then(d=>{PRODUCT_DB=d;console.log("产品数据加载完成");}).catch(e=>console.error("加载产品数据失败",e));
+fetch("https://daitu001.github.io/friendship-tool/product-data.json").then(r=>r.json()).then(d=>{PRODUCT_DB=d;console.log("产品数据加载完成");}).catch(e=>console.error("加载产品数据失败",e));
 </script>
 <script>
-fetch("color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.log("颜色数据加载完成");}).catch(e=>console.error("加载颜色数据失败",e));
+fetch("https://daitu001.github.io/friendship-tool/color-data.json").then(r=>r.json()).then(d=>{COLOR_ALIAS_MAP=d;console.log("颜色数据加载完成");}).catch(e=>console.error("加载颜色数据失败",e));
 </script>
 
 
@@ -3437,7 +3437,7 @@ var PRODUCT_DB = {};
 
 // ===== 从OSS异步加载最新产品数据（与大货工具同步） =====
 (function loadLatestProductData() {
-  fetch('product-data.json?t=' + Date.now())
+  fetch('https://daitu001.github.io/friendship-tool/product-data.json?t=' + Date.now())
     .then(function(res) { if (res.ok) return res.json(); throw new Error('Network error'); })
     .then(function(data) {
       var count = Object.keys(data).length;
