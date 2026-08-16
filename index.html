@@ -11,7 +11,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .header h1 { font-size: 24px; margin-bottom: 5px; }
 .header p { font-size: 14px; opacity: 0.9; }
 .menu-container { padding: 20px; max-width: 600px; margin: 0 auto; }
-.menu-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; align-items: center; }
+.menu-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-decoration: none; display: flex; align-items: center; transition: transform 0.2s, box-shadow 0.2s; }
 .menu-item:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
 .menu-item:active { transform: scale(0.98); }
 .menu-icon { font-size: 32px; margin-right: 15px; }
@@ -26,56 +26,49 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .modal h2 { font-size: 20px; margin-bottom: 16px; color: #333; }
 .modal p { font-size: 14px; color: #666; margin-bottom: 8px; line-height: 1.6; }
 .modal-close { background: #667eea; color: white; border: none; border-radius: 8px; padding: 10px 24px; font-size: 16px; cursor: pointer; margin-top: 16px; width: 100%; }
-#tool-frame { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: none; z-index: 999; }
-.back-btn { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
 </style>
 </head>
 <body>
-<div id="main-page">
-  <div class="header">
-    <h1>土土协作</h1>
-    <p>友谊纺织 · 销售团队工具</p>
-  </div>
-  <div class="menu-container">
-    <div class="menu-item" onclick="openTool('sample-report.html')">
-      <div class="menu-icon">📋</div>
-      <div class="menu-text">
-        <div class="menu-title">样布报单</div>
-        <div class="menu-desc">样布下单、查询、统计</div>
-      </div>
-      <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="openTool('v50.html')">
-      <div class="menu-icon">📦</div>
-      <div class="menu-text">
-        <div class="menu-title">大货报单</div>
-        <div class="menu-desc">大货下单、工厂报数、统计</div>
-      </div>
-      <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="openTool('customer-account.html')">
-      <div class="menu-icon">💰</div>
-      <div class="menu-text">
-        <div class="menu-title">客户公账</div>
-        <div class="menu-desc">客户账务管理</div>
-      </div>
-      <div class="menu-arrow">›</div>
-    </div>
-  </div>
-  <button class="version-btn" onclick="showVersion()">📝</button>
+<div class="header">
+  <h1>土土协作</h1>
+  <p>友谊纺织 · 销售团队工具</p>
 </div>
-
-<iframe id="tool-frame"></iframe>
-<button class="back-btn" id="back-btn" onclick="closeTool()">← 返回</button>
+<div class="menu-container">
+  <a class="menu-item" href="sample-report.html">
+    <div class="menu-icon">📋</div>
+    <div class="menu-text">
+      <div class="menu-title">样布报单</div>
+      <div class="menu-desc">样布下单、查询、统计</div>
+    </div>
+    <div class="menu-arrow">›</div>
+  </a>
+  <a class="menu-item" href="v50.html">
+    <div class="menu-icon">📦</div>
+    <div class="menu-text">
+      <div class="menu-title">大货报单</div>
+      <div class="menu-desc">大货下单、工厂报数、统计</div>
+    </div>
+    <div class="menu-arrow">›</div>
+  </a>
+  <a class="menu-item" href="customer-account.html">
+    <div class="menu-icon">💰</div>
+    <div class="menu-text">
+      <div class="menu-title">客户公账</div>
+      <div class="menu-desc">客户账务管理</div>
+    </div>
+    <div class="menu-arrow">›</div>
+  </a>
+</div>
+<button class="version-btn" onclick="showVersion()">📝</button>
 
 <div class="modal-overlay" id="version-modal">
   <div class="modal">
-    <h2>版本更新 v2.3.9</h2>
+    <h2>版本更新 v2.4.0</h2>
     <p><strong>2026-08-16</strong></p>
-    <p>• 修复 GitHub Pages 大文件截断问题</p>
-    <p>• 改用 iframe 加载工具页面</p>
-    <p>• 菜单：样布报单、大货报单、客户公账</p>
-    <p>• 产品编号：11,261 个</p>
+    <p>• 修复样布页面点击无反应问题</p>
+    <p>• 修复大货搜索 881082 无结果问题</p>
+    <p>• 改用直接导航（不再用 iframe）</p>
+    <p>• 产品编号：11,252 个</p>
     <p>• 客户数据：808 家</p>
     <p>• 工厂数据：90 家</p>
     <button class="modal-close" onclick="closeVersion()">关闭</button>
@@ -83,45 +76,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 </div>
 
 <script>
-function openTool(url) {
-  var frame = document.getElementById('tool-frame');
-  var backBtn = document.getElementById('back-btn');
-  var mainPage = document.getElementById('main-page');
-  
-  // Use relative URL for GitHub Pages, or construct Coze URL
-  var baseUrl = window.location.href.split('?')[0].replace(/[^/]*$/, '');
-  frame.src = baseUrl + url;
-  frame.style.display = 'block';
-  backBtn.style.display = 'block';
-  mainPage.style.display = 'none';
-}
-
-function closeTool() {
-  var frame = document.getElementById('tool-frame');
-  var backBtn = document.getElementById('back-btn');
-  var mainPage = document.getElementById('main-page');
-  
-  frame.src = '';
-  frame.style.display = 'none';
-  backBtn.style.display = 'none';
-  mainPage.style.display = 'block';
-}
-
 function showVersion() {
   document.getElementById('version-modal').classList.add('show');
 }
-
 function closeVersion() {
   document.getElementById('version-modal').classList.remove('show');
 }
-
-// Handle browser back button
-window.addEventListener('popstate', function(e) {
-  var frame = document.getElementById('tool-frame');
-  if (frame.style.display === 'block') {
-    closeTool();
-  }
-});
 </script>
 </body>
 </html>
