@@ -1866,9 +1866,30 @@ updateClock();setInterval(updateClock,30000);
  *
  * 方式2：调用 loadCustomers(data) 自动刷新
  * ============================================ */
+// ======= 数据接入：从OSS读取pursuit_dashboard.json =======
+let dashboardData = null;
+async function fetchDashboard() {
+  try {
+    const resp = await fetch('https://oss.genban.cn/genban/data/pursuit_dashboard.json?t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    dashboardData = await resp.json();
+    console.log('[追击] dashboard loaded', Object.keys(dashboardData).join(','));
+    // 重新渲染当前tab
+    const cur = document.querySelector('.tbi.act');
+    if (cur) {
+      const id = cur.id;
+      if (id === 'tbi-home') { renderHomeStats(); renderHome(); }
+      else if (id === 'tbi-report') { renderReportStats(); renderReport(); }
+      else if (id === 'tbi-mine') { renderMine(); }
+    }
+  } catch(e) {
+    console.warn('[追击] dashboard fetch failed, using mock:', e.message);
+  }
+}
 function loadCustomers(data){
   customers = Array.isArray(data) ? data : [];
   render();
+  fetchDashboard();
 }
 
 // 底栏"首页"按钮：iframe嵌入genban时返回genban主菜单，独立打开时不做处理
@@ -2024,30 +2045,38 @@ const HOME_TIMELINE=[
   {time:"昨天 11:20",text:"给 <b>南通李经理</b> 寄了新款尼丝纺色卡"}
 ];
 function renderHomeStats(){
+  const h = dashboardData?.home || {};
+  const s1 = h.todayContact ?? 5, s2 = h.weekRate ?? '23', s3 = h.monthNew ?? 12;
   document.getElementById("tbStats").innerHTML=
-    '<div class="tb-s"><div class="tb-n" style="color:#C7D2FE">5</div><div class="tb-l">今日待联系</div></div>'+
-    '<div class="tb-s"><div class="tb-n" style="color:#A7F3D0">23%</div><div class="tb-l">本周转化率</div></div>'+
-    '<div class="tb-s"><div class="tb-n" style="color:#FBCFE8">12</div><div class="tb-l">本月新增</div></div>';
+    '<div class="tb-s"><div class="tb-n" style="color:#C7D2FE">'+s1+'</div><div class="tb-l">今日待联系</div></div>'+
+    '<div class="tb-s"><div class="tb-n" style="color:#A7F3D0">'+s2+'%</div><div class="tb-l">本周转化率</div></div>'+
+    '<div class="tb-s"><div class="tb-n" style="color:#FBCFE8">'+s3+'</div><div class="tb-l">本月新增</div></div>';
 }
 function renderHome(){
   const h=new Date().getHours();
   let greet=h<12?"上午好":h<14?"中午好":h<18?"下午好":"晚上好";
   document.getElementById("greetText").textContent=greet+"，"+state.role+" ☀️";
-  document.getElementById("homeTodayList").innerHTML=HOME_TODAY.map(c=>{
-    const dc=c.days>=15?'var(--danger)':c.days>=7?'#EA580C':'var(--text-3)';
-    return '<div class="today-item"><div class="t-av '+c.color+'">'+c.av+'<span class="t-lvb">'+c.lvNm+'</span></div><div class="t-info"><div class="t-nm">'+c.name+'<span style="font-size:10px;color:'+dc+';font-weight:500">'+(c.days===0?'今天':c.days+'天前')+'</span></div><div class="t-mt">'+c.note+'</div></div><div class="t-acts"><button class="t-btn call" onclick="toast(\'📞 拨打 '+c.name+'\')">📞</button><button class="t-btn wx" onclick="toast(\'💬 发微信给 '+c.name+'\')">💬</button></div></div>';
-  }).join("");
-  document.getElementById("homeTimeline").innerHTML=HOME_TIMELINE.map(t=>
-    '<div class="tl-i"><div class="tl-dot"></div><div class="tl-c"><div class="tl-t">'+t.text+'</div><div class="tl-tm">'+t.time+'</div></div></div>'
-  ).join("");
+  const dh = dashboardData?.home || {};
+  const todayList = dh.todayList || [];
+  const timeline = dh.timeline || [];
+  document.getElementById("homeTodayList").innerHTML=todayList.length ? todayList.map(c=>{
+    const dc=(c.days||0)>=15?'var(--danger)':(c.days||0)>=7?'#EA580C':'var(--text-3)';
+    const dayTxt=(c.days||0)===0?'今天':(c.days||0)+'天前';
+    return '<div class="today-item"><div class="t-av '+(c.color||'bg1')+'">'+(c.av||'?')+'<span class="t-lvb">'+(c.lvNm||'')+'</span></div><div class="t-info"><div class="t-nm">'+(c.name||'')+'<span style="font-size:10px;color:'+dc+';font-weight:500">'+dayTxt+'</span></div><div class="t-mt">'+(c.note||'')+'</div></div><div class="t-acts"><button class="t-btn call" onclick="toast(\'📞 拨打 '+(c.name||'')+'\')">📞</button><button class="t-btn wx" onclick="toast(\'💬 发微信给 '+(c.name||'')+'\')">💬</button></div></div>';
+  }).join("") : '<div class="more" style="padding:20px;text-align:center;color:var(--text-3)">暂无待联系</div>';
+  document.getElementById("homeTimeline").innerHTML=timeline.length ? timeline.map(t=>
+    '<div class="tl-i"><div class="tl-dot"></div><div class="tl-c"><div class="tl-t">'+(t.text||'')+'</div><div class="tl-tm">'+(t.time||'')+'</div></div></div>'
+  ).join("") : '<div class="more" style="padding:20px;text-align:center;color:var(--text-3)">暂无动态</div>';
 }
 
 // ======= 报表 =======
 function renderReportStats(){
+  const r = dashboardData?.reports || {};
+  const s1 = r.totalPursuits ?? 127, s2 = r.converted ?? 29, s3 = r.convRate ?? '23';
   document.getElementById("tbStats").innerHTML=
-    '<div class="tb-s"><div class="tb-n" style="color:#DDD6FE">127</div><div class="tb-l">追击总数</div></div>'+
-    '<div class="tb-s"><div class="tb-n" style="color:#BBF7D0">29</div><div class="tb-l">已转化</div></div>'+
-    '<div class="tb-s"><div class="tb-n" style="color:#FBCFE8">23%</div><div class="tb-l">转化率</div></div>';
+    '<div class="tb-s"><div class="tb-n" style="color:#DDD6FE">'+s1+'</div><div class="tb-l">追击总数</div></div>'+
+    '<div class="tb-s"><div class="tb-n" style="color:#BBF7D0">'+s2+'</div><div class="tb-l">已转化</div></div>'+
+    '<div class="tb-s"><div class="tb-n" style="color:#FBCFE8">'+s3+'%</div><div class="tb-l">转化率</div></div>';
 }
 function renderReport(){
   const data=[3,5,4,7,6,8,5,9,7,11,8,10,12,9];
@@ -2107,8 +2136,9 @@ function renderMine(){
     const sm={sa:"超A",cs:"冲超A",a:"A级",b:"B级",c:"C级",d:"D级",s:"S级"};
     document.getElementById("mineScopeTag").textContent="负责："+rCfg.scope.map(k=>sm[k]||k).join("/");
   }
-  const stats={"只只":[12,38,3,23],"灰姑娘":[15,42,4,27],"小杰":[22,55,5,23],"朵丹":[13,29,2,18],"主任":[68,168,15,22]};
-  const s=stats[r]||[12,38,3,23];
+  const dm = dashboardData?.roles?.roleStats || dashboardData?.home?.roleStats || {};
+  const defaultStats={"只只":[12,38,3,23],"灰姑娘":[15,42,4,27],"小杰":[22,55,5,23],"朵丹":[13,29,2,18],"主任":[68,168,15,22]};
+  const s = dm[r] || defaultStats[r] || [0,0,0,0];
   document.getElementById("mS1").textContent=s[0];
   document.getElementById("mS2").textContent=s[1];
   document.getElementById("mS3").textContent=s[2];
@@ -2178,6 +2208,7 @@ function addFromSheet(id,hasConflict){
 const _origPickRole_showToast = true; // placeholder
 document.addEventListener("DOMContentLoaded",function(){/* noop */});
 
+fetchDashboard();
 render();
 </script>
 </body>
