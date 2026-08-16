@@ -1870,7 +1870,7 @@ updateClock();setInterval(updateClock,30000);
 let dashboardData = null;
 async function fetchDashboard() {
   try {
-    const resp = await fetch('https://oss.genban.cn/genban/data/pursuit_dashboard.json?t=' + Date.now());
+    const resp = await fetch('https://daitu001.github.io/friendship-tool/data/pursuit_dashboard.json?t=' + Date.now());
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     dashboardData = await resp.json();
     console.log('[追击] dashboard loaded', Object.keys(dashboardData).join(','));

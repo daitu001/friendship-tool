@@ -1,0 +1,78 @@
+{
+  "home": {
+    "todayContact": 5,
+    "weekRate": 23,
+    "monthNew": 12,
+    "todayList": [
+      {
+        "name": "绍兴柯桥王总",
+        "av": "王",
+        "lvNm": "A",
+        "color": "bg1",
+        "days": 0,
+        "note": "今天需要跟进样布确认"
+      },
+      {
+        "name": "义乌张姐",
+        "av": "张",
+        "lvNm": "超A",
+        "color": "bg2",
+        "days": 1,
+        "note": "大货订单待确认"
+      }
+    ],
+    "timeline": [
+      {
+        "text": "小杰 联系了 杭州林总",
+        "time": "10分钟前"
+      },
+      {
+        "text": "灰姑娘 寄样给 南通李经理",
+        "time": "1小时前"
+      },
+      {
+        "text": "只只 成交 绍兴柯桥王总",
+        "time": "2小时前"
+      }
+    ]
+  },
+  "pursuits": [],
+  "customers_lite": [],
+  "reports": {
+    "totalPursuits": 127,
+    "converted": 29,
+    "convRate": 23,
+    "barData": [3,5,4,7,6,8,5,9,7,11,8,10,12,9],
+    "roleBars": [
+      {"nm": "只只", "val": 18, "c": "#06B6D4", "pct": 90},
+      {"nm": "灰姑娘", "val": 15, "c": "#EC4899", "pct": 75},
+      {"nm": "小杰", "val": 22, "c": "#F97316", "pct": 100},
+      {"nm": "朵丹", "val": 13, "c": "#8B5CF6", "pct": 65},
+      {"nm": "主任", "val": 8, "c": "#F97316", "pct": 40}
+    ],
+    "lvDist": [
+      {"nm": "超A", "num": 8, "c": "linear-gradient(135deg,#F87171,#EF4444)"},
+      {"nm": "冲A", "num": 15, "c": "linear-gradient(135deg,#FB923C,#F97316)"},
+      {"nm": "A级", "num": 32, "c": "linear-gradient(135deg,#FBBF24,#F59E0B)"},
+      {"nm": "B级", "num": 38, "c": "linear-gradient(135deg,#60A5FA,#3B82F6)"},
+      {"nm": "C级", "num": 21, "c": "linear-gradient(135deg,#A78BFA,#8B5CF6)"},
+      {"nm": "D级", "num": 9, "c": "linear-gradient(135deg,#9CA3AF,#6B7280)"},
+      {"nm": "S级", "num": 4, "c": "linear-gradient(135deg,#F472B6,#EC4899)"}
+    ],
+    "convDetails": [
+      {"t": "样布→大货转化率", "sub": "寄样客户中最终下大货比例", "v": "34", "u": "%"},
+      {"t": "首次联系→复购率", "sub": "首次接触后30天内再下单", "v": "18", "u": "%"},
+      {"t": "平均追击周期", "sub": "从首次接触到成单平均天数", "v": "22", "u": "天"},
+      {"t": "本月新增追击", "sub": "本月新加入追击的客户", "v": "26", "u": "个"}
+    ]
+  },
+  "roles": {
+    "roleStats": {
+      "只只": [12, 38, 3, 23],
+      "灰姑娘": [15, 42, 4, 27],
+      "小杰": [22, 55, 5, 23],
+      "朵丹": [13, 29, 2, 18],
+      "主任": [68, 168, 15, 22]
+    }
+  }
+}
