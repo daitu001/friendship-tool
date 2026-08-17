@@ -4205,7 +4205,7 @@ function copyToFactory() {
       
       if (colorInfos.length === 1) {
         var reqSuffix = colorInfos[0].req ? ' ' + colorInfos[0].req : '';
-        lines.push(colorInfos[0].code + '#' + ' ' + colorInfos[0].qty + colorInfos[0].unit + reqSuffix);
+        lines.push('色号：' + colorInfos[0].code + '# ' + colorInfos[0].qty + colorInfos[0].unit + reqSuffix);
       } else {
         var groups = {};
         var order = [];
@@ -4216,9 +4216,9 @@ function copyToFactory() {
         });
         order.forEach(function(gkey) {
           if (groups[gkey].length === 1) {
-            lines.push(groups[gkey][0] + '# ' + gkey);
+            lines.push('色号：' + groups[gkey][0] + '# ' + gkey);
           } else {
-            lines.push(groups[gkey].join(' ') + '# 各' + gkey);
+            lines.push('色号：' + groups[gkey].join('#   ') + '#   各' + gkey);
           }
         });
       }
@@ -5641,7 +5641,7 @@ document.getElementById('colorMgmtModal').addEventListener('click', function(e) 
     <span class="jb-dot sync-dot"></span>
     <span class="jb-sync-text jb-sync-status">☁ 未同步</span>
   </div>
-  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.3</div>
+  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.4</div>
 </div>
 <script id="jb-clock-script">
 
