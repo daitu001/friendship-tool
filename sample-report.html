@@ -4187,7 +4187,8 @@ function copyToFactory() {
         var req = row.querySelector('.req-input')?.value.trim();
         var factoryColorInput = row.querySelector('.factory-color-input');
         var factoryColor = (factoryColorInput && factoryColorInput.value.trim()) || colorMap[colorCode] || '';
-        if (!colorCode || !factoryColor) return;
+        if (!colorCode) return;
+        if (!factoryColor) factoryColor = colorCode;
         colorInfos.push({ code: factoryColor, qty: qty || '?', unit: unit || '', req: req || '' });
       });
       
@@ -5640,7 +5641,7 @@ document.getElementById('colorMgmtModal').addEventListener('click', function(e) 
     <span class="jb-dot sync-dot"></span>
     <span class="jb-sync-text jb-sync-status">☁ 未同步</span>
   </div>
-  <div class="jb-status-right">© 2026 友谊纺织 · v2.1.8</div>
+  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.3</div>
 </div>
 <script id="jb-clock-script">
 
