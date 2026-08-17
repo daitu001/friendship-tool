@@ -2753,8 +2753,10 @@ table tbody td input {
   background: linear-gradient(180deg,#5A7E9A,#4A6E8A) !important;
   font-family: "Hiragino Mincho ProN","Yu Mincho","Noto Serif SC",serif !important;
   letter-spacing: .1em;
-  margin: -20px -16px 14px !important;
+  margin: -20px -16px 14px -16px !important;
   padding: 16px 16px 14px !important;
+  width: calc(100% + 32px) !important;
+  box-sizing: border-box !important;
   border-radius: 14px 14px 0 0 !important;
   position: relative !important;
   overflow: hidden !important;
@@ -5655,7 +5657,7 @@ document.getElementById('colorMgmtModal').addEventListener('click', function(e) 
     <span class="jb-dot sync-dot"></span>
     <span class="jb-sync-text jb-sync-status">☁ 未同步</span>
   </div>
-  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.7</div>
+  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.8</div>
 </div>
 <script id="jb-clock-script">
 
