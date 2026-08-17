@@ -3322,11 +3322,13 @@ img, video { max-width: 100%; }
     </div>
     
     <div id="tab-history">
-      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
-        <input type="text" id="historySearch" placeholder="搜索客户/工厂/编号..." style="flex:1;padding:8px 10px;font-size:13px" oninput="loadHistory()">
-        <button class="btn btn-success btn-sm" onclick="copyTodayFactories()" style="white-space:nowrap;font-size:12px">📋 今日工厂</button>
-        <button class="btn btn-success btn-sm" onclick="showFactoryPicker()" style="white-space:nowrap;font-size:12px">📋 复制筛选</button>
-        <button class="btn btn-success btn-sm" onclick="copyLatestRecord()" style="white-space:nowrap;font-size:12px">📋 最新工厂</button>
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="historySearch" placeholder="搜索客户/工厂/编号..." style="flex:1;min-width:120px;padding:8px 10px;font-size:13px" oninput="loadHistory()">
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-success btn-sm" onclick="copyTodayFactories()" style="flex:1;min-width:0;font-size:11px;padding:6px 4px">📋 今日工厂</button>
+        <button class="btn btn-success btn-sm" onclick="showFactoryPicker()" style="flex:1;min-width:0;font-size:11px;padding:6px 4px">📋 复制筛选</button>
+        <button class="btn btn-success btn-sm" onclick="copyLatestRecord()" style="flex:1;min-width:0;font-size:11px;padding:6px 4px">📋 最新工厂</button>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;font-size:12px">
         <span style="color:#64748b">日期：</span>
@@ -5641,7 +5643,7 @@ document.getElementById('colorMgmtModal').addEventListener('click', function(e) 
     <span class="jb-dot sync-dot"></span>
     <span class="jb-sync-text jb-sync-status">☁ 未同步</span>
   </div>
-  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.4</div>
+  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.5</div>
 </div>
 <script id="jb-clock-script">
 
