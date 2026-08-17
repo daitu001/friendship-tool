@@ -2032,21 +2032,9 @@ function switchBottomTab(t){
 }
 
 // ======= 首页 =======
-const HOME_TODAY=[
-  {name:"绍兴柯桥王总",av:"王总",lv:"a",lvNm:"A",color:"a",days:3,note:"询问新款涤塔夫报价"},
-  {name:"义乌张姐",av:"张姐",lv:"sa",lvNm:"超A",color:"sa",days:1,note:"样布已寄，待确认大货"},
-  {name:"南通李经理",av:"李经",lv:"b",lvNm:"B",color:"b",days:8,note:"需要复购春亚纺"},
-  {name:"广州陈老板",av:"陈老",lv:"c",lvNm:"C",color:"c",days:15,note:"上次寄样后无回复"}
-];
-const HOME_TIMELINE=[
-  {time:"今天 14:20",text:"给 <b>绍兴柯桥王总</b> 打了电话，说要再看看样布报价"},
-  {time:"今天 10:30",text:"<b>义乌张姐</b> 微信回复：样布收到，质感不错，下周安排打款"},
-  {time:"昨天 16:45",text:"<b>苏州周总</b> 下了 <b style='color:#10B981'>¥28万</b> 大货订单 🎉"},
-  {time:"昨天 11:20",text:"给 <b>南通李经理</b> 寄了新款尼丝纺色卡"}
-];
 function renderHomeStats(){
   const h = dashboardData?.home || {};
-  const s1 = h.todayContact ?? 5, s2 = h.weekRate ?? '23', s3 = h.monthNew ?? 12;
+  const s1 = h.todayContact ?? 0, s2 = h.weekRate ?? 0, s3 = h.monthNew ?? 0;
   document.getElementById("tbStats").innerHTML=
     '<div class="tb-s"><div class="tb-n" style="color:#C7D2FE">'+s1+'</div><div class="tb-l">今日待联系</div></div>'+
     '<div class="tb-s"><div class="tb-n" style="color:#A7F3D0">'+s2+'%</div><div class="tb-l">本周转化率</div></div>'+
@@ -2072,53 +2060,58 @@ function renderHome(){
 // ======= 报表 =======
 function renderReportStats(){
   const r = dashboardData?.reports || {};
-  const s1 = r.totalPursuits ?? 127, s2 = r.converted ?? 29, s3 = r.convRate ?? '23';
+  const s1 = r.totalPursuits ?? 0, s2 = r.converted ?? 0, s3 = r.convRate ?? 0;
   document.getElementById("tbStats").innerHTML=
     '<div class="tb-s"><div class="tb-n" style="color:#DDD6FE">'+s1+'</div><div class="tb-l">追击总数</div></div>'+
     '<div class="tb-s"><div class="tb-n" style="color:#BBF7D0">'+s2+'</div><div class="tb-l">已转化</div></div>'+
     '<div class="tb-s"><div class="tb-n" style="color:#FBCFE8">'+s3+'%</div><div class="tb-l">转化率</div></div>';
 }
 function renderReport(){
-  const data=[3,5,4,7,6,8,5,9,7,11,8,10,12,9];
-  const max=Math.max(...data);
-  const sd=new Date();sd.setDate(sd.getDate()-13);
+  // 追击趋势图：从 dashboardData 动态读取
+  const trend = dashboardData?.reports?.trend || [];
+  const data = trend.length ? trend.map(t=>t.count||0) : [];
+  const max = data.length ? Math.max(...data) : 1;
+  const sd=new Date();sd.setDate(sd.getDate()-(data.length||14)+1);
   let bars="",lbls="";
-  for(let i=0;i<14;i++){
+  const len = data.length || 14;
+  for(let i=0;i<len;i++){
     const d=new Date(sd);d.setDate(sd.getDate()+i);
-    const h=Math.round((data[i]/max)*110);
-    const hi=data[i]===max;
-    bars+='<div class="bar '+(hi?'hi':'')+'" style="height:'+h+'px" onclick="toast(\''+(d.getMonth()+1)+'/'+d.getDate()+'：追击'+data[i]+'个客户\')">'+(hi?'<span class="bar-v">'+data[i]+'</span>':'')+'</div>';
+    const val = data[i]||0;
+    const h=max>0?Math.round((val/max)*110):0;
+    const hi=val===max&&val>0;
+    bars+='<div class="bar '+(hi?'hi':'')+'" style="height:'+h+'px" onclick="toast(\''+(d.getMonth()+1)+'/'+d.getDate()+'：追击'+val+'个客户\')">'+(hi?'<span class="bar-v">'+val+'</span>':'')+'</div>';
     lbls+='<div class="bar-lbl">'+(i%2===0?(d.getMonth()+1)+'/'+d.getDate():'')+'</div>';
   }
   document.getElementById("barChart").innerHTML=bars;
   document.getElementById("barLbls").innerHTML=lbls;
-  const rolesData=[
-    {nm:"只只",val:18,c:"#06B6D4",pct:90},
-    {nm:"灰姑娘",val:15,c:"#EC4899",pct:75},
-    {nm:"小杰",val:22,c:"#F97316",pct:100},
-    {nm:"朵丹",val:13,c:"#8B5CF6",pct:65},
-    {nm:"主任",val:8,c:"#F59E0B",pct:40}
-  ];
-  document.getElementById("roleBars").innerHTML=rolesData.map(r=>
+  // 角色追击分布：从 dashboardData 动态读取
+  const roleStats = dashboardData?.reports?.roleDistribution || dashboardData?.roles?.roleStats || {};
+  const roleKeys = Object.keys(roleStats);
+  const roleColors = {"只只":"#06B6D4","灰姑娘":"#EC4899","小杰":"#F97316","朵丹":"#8B5CF6","刘老师":"#F59E0B"};
+  const maxRole = roleKeys.length ? Math.max(...roleKeys.map(k=>roleStats[k]?.[1]||0)) : 1;
+  const rolesData = roleKeys.length ? roleKeys.map(nm=>({
+    nm:nm, val:roleStats[nm]?.[1]||0, c:roleColors[nm]||"#3B82F6", pct:maxRole>0?Math.round((roleStats[nm]?.[1]||0)/maxRole*100):0
+  })) : [];
+  document.getElementById("roleBars").innerHTML=rolesData.length?rolesData.map(r=>
     '<div class="hbar-row"><div class="hbar-nm">'+r.nm+'</div><div class="hbar-track"><div class="hbar-fill" style="width:'+r.pct+'%;background:'+r.c+'"></div></div><div class="hbar-val">'+r.val+'</div></div>'
-  ).join("");
-  const lvData=[
-    {nm:"超A",num:8,c:"linear-gradient(135deg,#F87171,#EF4444)"},
-    {nm:"冲A",num:15,c:"linear-gradient(135deg,#FB923C,#F97316)"},
-    {nm:"A级",num:32,c:"linear-gradient(135deg,#FBBF24,#F59E0B)"},
-    {nm:"B级",num:38,c:"linear-gradient(135deg,#60A5FA,#3B82F6)"},
-    {nm:"C级",num:21,c:"linear-gradient(135deg,#A78BFA,#8B5CF6)"},
-    {nm:"D级",num:9,c:"linear-gradient(135deg,#9CA3AF,#6B7280)"},
-    {nm:"S级",num:4,c:"linear-gradient(135deg,#F472B6,#EC4899)"}
-  ];
-  document.getElementById("lvDist").innerHTML=lvData.map(l=>
+  ).join(""):'<div class="more" style="padding:20px;text-align:center;color:var(--text-3)">暂无数据</div>';
+  // 等级分布：从 dashboardData.customers_lite 动态统计
+  const custs = dashboardData?.customers_lite || [];
+  const lvCount = {};
+  custs.forEach(c=>{const g=c.sub_grade||c.grade||'未知';lvCount[g]=(lvCount[g]||0)+1;});
+  const lvOrder = ["超A","A（冲超A）","A","B","C","D","S"];
+  const lvColors = {"超A":"linear-gradient(135deg,#F87171,#EF4444)","A（冲超A）":"linear-gradient(135deg,#FB923C,#F97316)","A":"linear-gradient(135deg,#FBBF24,#F59E0B)","B":"linear-gradient(135deg,#60A5FA,#3B82F6)","C":"linear-gradient(135deg,#A78BFA,#8B5CF6)","D":"linear-gradient(135deg,#9CA3AF,#6B7280)","S":"linear-gradient(135deg,#F472B6,#EC4899)"};
+  const lvData = lvOrder.filter(g=>lvCount[g]).map(g=>({nm:g,num:lvCount[g],c:lvColors[g]||"linear-gradient(135deg,#999,#666)"}));
+  document.getElementById("lvDist").innerHTML=lvData.length?lvData.map(l=>
     '<div class="lv-d"><div class="lv-blk" style="background:'+l.c+'">'+l.num+'</div><div class="lv-nm">'+l.nm+'</div></div>'
-  ).join("");
-  const cvData=[
-    {t:"样布→大货转化率",sub:"寄样客户中最终下大货比例",v:"34",u:"%"},
-    {t:"首次联系→复购率",sub:"首次接触后30天内再下单",v:"18",u:"%"},
-    {t:"平均追击周期",sub:"从首次接触到成单平均天数",v:"22",u:"天"},
-    {t:"本月新增追击",sub:"本月新加入追击的客户",v:"26",u:"个"}
+  ).join(""):'<div class="more" style="padding:20px;text-align:center;color:var(--text-3)">暂无数据</div>';
+  // 转化数据：从 dashboardData 动态读取
+  const cv = dashboardData?.reports?.conversion || {};
+  const cvData = [
+    {t:"样布→大货转化率",sub:"寄样客户中最终下大货比例",v:cv.sampleToCargo??0,u:"%"},
+    {t:"首次联系→复购率",sub:"首次接触后30天内再下单",v:cv.firstToRepeat??0,u:"%"},
+    {t:"平均追击周期",sub:"从首次接触到成单平均天数",v:cv.avgDays??0,u:"天"},
+    {t:"本月新增追击",sub:"本月新加入追击的客户",v:cv.monthNew??0,u:"个"}
   ];
   document.getElementById("convList").innerHTML=cvData.map(c=>
     '<div class="cv-row"><div class="cv-t"><div class="cv-t1">'+c.t+'</div><div class="cv-t2">'+c.sub+'</div></div><div class="cv-v">'+c.v+'<small>'+c.u+'</small></div></div>'
@@ -2137,8 +2130,7 @@ function renderMine(){
     document.getElementById("mineScopeTag").textContent="负责："+rCfg.scope.map(k=>sm[k]||k).join("/");
   }
   const dm = dashboardData?.roles?.roleStats || dashboardData?.home?.roleStats || {};
-  const defaultStats={"只只":[12,38,3,23],"灰姑娘":[15,42,4,27],"小杰":[22,55,5,23],"朵丹":[13,29,2,18],"主任":[68,168,15,22]};
-  const s = dm[r] || defaultStats[r] || [0,0,0,0];
+  const s = dm[r] || [0,0,0,0];
   document.getElementById("mS1").textContent=s[0];
   document.getElementById("mS2").textContent=s[1];
   document.getElementById("mS3").textContent=s[2];
@@ -2146,16 +2138,20 @@ function renderMine(){
 }
 
 // ======= 中间+按钮：快速添加浮层 =======
-const ADD_CUSTOMERS=[
-  {id:101,name:"绍兴柯桥王总",av:"王总",lv:"a",lvNm:"A",pursuit:[],amt:0,orders:0,note:"新询价涤塔夫"},
-  {id:102,name:"义乌张姐",av:"张姐",lv:"sa",lvNm:"超A",pursuit:["灰姑娘"],amt:85,orders:12,note:"大货合作中"},
-  {id:103,name:"南通李经理",av:"李经",lv:"b",lvNm:"B",pursuit:[],amt:12,orders:3,note:"样布已确认"},
-  {id:104,name:"广州陈老板",av:"陈老",lv:"c",lvNm:"C",pursuit:[],amt:0,orders:0,note:"首次咨询"},
-  {id:105,name:"苏州周总",av:"周总",lv:"sa",lvNm:"超A",pursuit:["小杰","朵丹"],amt:120,orders:18,note:"2人协同"},
-  {id:106,name:"杭州林总",av:"林总",lv:"cs",lvNm:"冲超A",pursuit:[],amt:0,orders:0,note:"有潜力冲超A"},
-  {id:107,name:"佛山吴姐",av:"吴姐",lv:"s",lvNm:"S",pursuit:[],amt:0,orders:0,note:"S级新客"},
-  {id:108,name:"青岛孙总",av:"孙总",lv:"d",lvNm:"D",pursuit:[],amt:2,orders:1,note:"小单客户"}
-];
+function getAddCustomers(){
+  const custs = dashboardData?.customers_lite || [];
+  return custs.map((c,i)=>({
+    id: 1000+i,
+    name: c.company || c.name || '',
+    av: (c.company||c.name||'?').slice(0,2),
+    lv: (c.sub_grade||c.grade||'').toLowerCase().replace(/[^a-z]/g,'') || 'b',
+    lvNm: c.sub_grade || c.grade || '',
+    pursuit: c.pursuit || [],
+    amt: c.cargo_amount || 0,
+    orders: c.order_count || 0,
+    note: c.note || ''
+  }));
+}
 let addLvFilter="all",addSearchKey="";
 function openAddSheet(){
   const _am=document.getElementById("addMask");_am.classList.remove("hi");_am.classList.add("show");
@@ -2173,7 +2169,7 @@ function renderAddLvChips(){
 function setAddLv(k){addLvFilter=k;renderAddLvChips();renderAddList()}
 function filterAddList(v){addSearchKey=v.trim();renderAddList()}
 function renderAddList(){
-  let list=ADD_CUSTOMERS.slice();
+  let list=getAddCustomers();
   if(addLvFilter!=="all")list=list.filter(c=>c.lv===addLvFilter);
   if(addSearchKey)list=list.filter(c=>c.name.includes(addSearchKey));
   const cm={sa:"#EF4444",cs:"#F97316",a:"#F97316",b:"#3B82F6",c:"#8B5CF6",d:"#6B7280",s:"#EC4899"};
@@ -2188,7 +2184,7 @@ function renderAddList(){
   }).join(""):'<div class="more" style="padding:30px 20px">暂无客户</div>';
 }
 function addFromSheet(id,hasConflict){
-  const mock=ADD_CUSTOMERS.find(x=>x.id===id);if(!mock)return;
+  const mock=getAddCustomers().find(x=>x.id===id);if(!mock)return;
   let c=customers.find(x=>x.id===id);
   if(!c){
     c={id:id,name:mock.name,av:mock.av,lv:mock.lv,lvNm:mock.lvNm,amt:mock.amt,orders:mock.orders,
