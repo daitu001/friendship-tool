@@ -2756,6 +2756,7 @@ table tbody td input {
   margin: -20px -16px 14px -16px !important;
   padding: 16px 16px 14px !important;
   width: calc(100% + 32px) !important;
+  max-width: calc(100% + 32px) !important;
   box-sizing: border-box !important;
   border-radius: 14px 14px 0 0 !important;
   position: relative !important;
@@ -3345,20 +3346,8 @@ img, video { max-width: 100%; }
 </div>
 
 <!-- Floating button to open product entry -->
-<div style="position:fixed;right:16px;bottom:80px;z-index:99;display:flex;flex-direction:column;gap:10px;">
-  <button class="btn btn-primary" id="drawBtn" style="border-radius:50%;width:50px;height:50px;padding:0;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,0.4);" onclick="toggleDrawMode()" title="涂鸦标记">✏️</button>
+<div style="position:fixed;right:16px;bottom:80px;z-index:99;">
   <button class="btn btn-primary" style="border-radius:50%;width:50px;height:50px;padding:0;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,0.4);" onclick="openModal()" title="产品录入">+</button>
-</div>
-
-<!-- 涂鸦画布 -->
-<canvas id="drawCanvas" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;touch-action:none;"></canvas>
-
-<!-- 涂鸦工具栏 -->
-<div id="drawToolbar" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;background:white;border-radius:30px;padding:8px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.2);display:none;align-items:center;gap:12px;">
-  <input type="color" id="drawColor" value="#ff0000" style="width:36px;height:36px;border:none;border-radius:50%;cursor:pointer;">
-  <input type="range" id="drawSize" min="2" max="20" value="4" style="width:80px;">
-  <button onclick="clearDrawCanvas()" style="padding:6px 12px;border:none;background:#f1f5f9;border-radius:6px;font-size:14px;cursor:pointer;">清除</button>
-  <button onclick="toggleDrawMode()" style="padding:6px 12px;border:none;background:#ef4444;color:white;border-radius:6px;font-size:14px;cursor:pointer;">退出</button>
 </div>
 
 <!-- Toast -->
@@ -5657,7 +5646,7 @@ document.getElementById('colorMgmtModal').addEventListener('click', function(e) 
     <span class="jb-dot sync-dot"></span>
     <span class="jb-sync-text jb-sync-status">☁ 未同步</span>
   </div>
-  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.8</div>
+  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.9</div>
 </div>
 <script id="jb-clock-script">
 
@@ -5900,114 +5889,6 @@ document.getElementById('colorMgmtModal').addEventListener('click', function(e) 
   // 兜底：定时检查
   setInterval(fixLayout, 800);
 })();
-
-// 涂鸦功能
-let drawMode = false;
-let drawCtx = null;
-let drawCanvas = null;
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
-
-function toggleDrawMode() {
-  drawMode = !drawMode;
-  const canvas = document.getElementById('drawCanvas');
-  const toolbar = document.getElementById('drawToolbar');
-  const btn = document.getElementById('drawBtn');
-  
-  if (drawMode) {
-    // 进入涂鸦模式
-    canvas.style.display = 'block';
-    toolbar.style.display = 'flex';
-    btn.style.background = '#ef4444';
-    btn.style.boxShadow = '0 4px 16px rgba(239,68,68,0.4)';
-    
-    // 初始化canvas
-    if (!drawCtx) {
-      drawCanvas = canvas;
-      drawCtx = canvas.getContext('2d');
-      resizeDrawCanvas();
-      window.addEventListener('resize', resizeDrawCanvas);
-      
-      // 绑定事件
-      canvas.addEventListener('mousedown', startDraw);
-      canvas.addEventListener('mousemove', draw);
-      canvas.addEventListener('mouseup', stopDraw);
-      canvas.addEventListener('touchstart', startDrawTouch);
-      canvas.addEventListener('touchmove', drawTouch);
-      canvas.addEventListener('touchend', stopDraw);
-    }
-  } else {
-    // 退出涂鸦模式
-    canvas.style.display = 'none';
-    toolbar.style.display = 'none';
-    btn.style.background = '';
-    btn.style.boxShadow = '';
-  }
-}
-
-function resizeDrawCanvas() {
-  const canvas = document.getElementById('drawCanvas');
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
-  drawCtx.scale(dpr, dpr);
-  drawCtx.lineCap = 'round';
-  drawCtx.lineJoin = 'round';
-}
-
-function getDrawPos(e) {
-  const rect = drawCanvas.getBoundingClientRect();
-  return {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
-  };
-}
-
-function startDraw(e) {
-  isDrawing = true;
-  const pos = getDrawPos(e);
-  lastX = pos.x;
-  lastY = pos.y;
-}
-
-function draw(e) {
-  if (!isDrawing) return;
-  const pos = getDrawPos(e);
-  const color = document.getElementById('drawColor').value;
-  const size = document.getElementById('drawSize').value;
-  
-  drawCtx.strokeStyle = color;
-  drawCtx.lineWidth = size;
-  drawCtx.beginPath();
-  drawCtx.moveTo(lastX, lastY);
-  drawCtx.lineTo(pos.x, pos.y);
-  drawCtx.stroke();
-  
-  lastX = pos.x;
-  lastY = pos.y;
-}
-
-function stopDraw() {
-  isDrawing = false;
-}
-
-function startDrawTouch(e) {
-  e.preventDefault();
-  const touch = e.touches[0];
-  startDraw(touch);
-}
-
-function drawTouch(e) {
-  e.preventDefault();
-  const touch = e.touches[0];
-  draw(touch);
-}
-
-function clearDrawCanvas() {
-  const canvas = document.getElementById('drawCanvas');
-  drawCtx.clearRect(0, 0, canvas.width, canvas.height);
-}
 
 
 </script>
