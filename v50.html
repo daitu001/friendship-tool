@@ -2851,28 +2851,26 @@ window.addEventListener('load',function(){
     <!-- 新建表单 -->
     <div id="fFactoryForm" style="background:#F5FBF5;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;margin-bottom:8px;">
       <div style="font-size:11px;color:#999;margin-bottom:3px;">📅 日期：<span id="fFactoryDate" style="font-weight:700;color:#111;"></span></div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <div style="display:flex;align-items:center;gap:4px;">
-            <label style="font-size:12px;color:#666;white-space:nowrap;">客户名称：</label>
-            <input type="text" id="fCustomerName" placeholder="填写客户名称" style="width:120px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;">
-          </div>
-          <div id="productCodeDisplay" style="display:none;align-items:center;gap:4px;">
-            <span style="color:#666;white-space:nowrap;font-size:12px;">色卡编号：</span>
-            <input type="text" id="fColorCard" style="width:120px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;">
-          </div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;min-width:58px;">客户名称</label>
+          <input type="text" id="fCustomerName" placeholder="填写客户名称" style="flex:1;padding:7px 8px;border:1px solid #e0e0e0;border-radius:4px;font-size:13px;outline:none;box-sizing:border-box;">
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
-          <div style="display:flex;align-items:center;gap:4px;">
-            <label style="font-size:12px;color:#666;white-space:nowrap;">工厂名称：</label>
-            <div style="width:120px;position:relative;">
-              <input type="text" id="fFactoryName" placeholder="输入联想" style="width:100%;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;" oninput="onFactoryNameInput()" autocomplete="off">
-              <div id="fFactoryNameList" style="display:none;position:absolute;top:100%;right:0;background:#fff;border:1px solid #e0e0e0;border-top:none;max-height:120px;overflow-y:auto;z-index:100;font-size:12px;"></div>
+        <div id="productCodeDisplay" style="display:none;align-items:center;gap:6px;margin-bottom:6px;">
+          <label style="font-size:12px;color:#666;white-space:nowrap;min-width:58px;">色卡编号</label>
+          <input type="text" id="fColorCard" style="flex:1;padding:7px 8px;border:1px solid #e0e0e0;border-radius:4px;font-size:13px;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;display:flex;align-items:center;gap:6px;">
+            <label style="font-size:12px;color:#666;white-space:nowrap;min-width:58px;">工厂名称</label>
+            <div style="flex:1;position:relative;">
+              <input type="text" id="fFactoryName" placeholder="输入联想" style="width:100%;padding:7px 8px;border:1px solid #e0e0e0;border-radius:4px;font-size:13px;outline:none;box-sizing:border-box;" oninput="onFactoryNameInput()" autocomplete="off">
+              <div id="fFactoryNameList" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0e0e0;border-top:none;max-height:120px;overflow-y:auto;z-index:100;font-size:12px;"></div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;">
-            <label style="font-size:12px;color:#666;white-space:nowrap;">工厂编号：</label>
-            <input type="text" id="fFactoryNo" placeholder="6666#" style="width:120px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:13px;outline:none;box-sizing:border-box;">
+          <div style="flex:1;display:flex;align-items:center;gap:6px;">
+            <label style="font-size:12px;color:#666;white-space:nowrap;min-width:58px;">工厂编号</label>
+            <input type="text" id="fFactoryNo" placeholder="6666#" style="flex:1;padding:7px 8px;border:1px solid #e0e0e0;border-radius:4px;font-size:13px;outline:none;box-sizing:border-box;">
           </div>
         </div>
       </div>
@@ -6401,7 +6399,7 @@ function doFactoryImportWithUnit(targetUnit) {
     <span class="jb-dot sync-dot"></span>
     <span class="jb-sync-text jb-sync-status">☁ 未同步</span>
   </div>
-  <div class="jb-status-right">© 2026 友谊纺织 · v2.1.9</div>
+  <div class="jb-status-right">© 2026 友谊纺织 · v2.2.0</div>
 </div>
 <script id="jb-clock-script">
 
