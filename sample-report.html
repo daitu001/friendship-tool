@@ -3301,7 +3301,10 @@ img, video { max-width: 100%; }
 
   <!-- Sample Entries -->
   <div class="card">
-    <div class="card-title"><span class="icon">2</span> 样布明细</div>
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span><span class="icon">2</span> 样布明细</span>
+      <button class="btn btn-primary btn-sm" onclick="openModal()" style="padding:6px 12px;font-size:12px;border-radius:6px;">📋 样布记录</button>
+    </div>
     <div id="entriesContainer">
       <!-- Dynamic entries here -->
     </div>
@@ -3345,10 +3348,7 @@ img, video { max-width: 100%; }
   </div>
 </div>
 
-<!-- Floating button to open product entry -->
-<div style="position:fixed;right:16px;bottom:80px;z-index:99;">
-  <button class="btn btn-primary" style="border-radius:50%;width:50px;height:50px;padding:0;font-size:22px;box-shadow:0 4px 16px rgba(59,130,246,0.4);" onclick="openModal()" title="产品录入">+</button>
-</div>
+
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
@@ -5646,7 +5646,7 @@ document.getElementById('colorMgmtModal').addEventListener('click', function(e) 
     <span class="jb-dot sync-dot"></span>
     <span class="jb-sync-text jb-sync-status">☁ 未同步</span>
   </div>
-  <div class="jb-status-right">© 2026 友谊纺织 · v2.4.9</div>
+  <div class="jb-status-right">© 2026 友谊纺织 · v2.5.0</div>
 </div>
 <script id="jb-clock-script">
 
