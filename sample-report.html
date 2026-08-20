@@ -4005,12 +4005,27 @@ function updateFactoryColorHints(entryId) {
     if (!factoryInput) return;
     var colorVal = inp.value.trim();
     if (colorVal && colorMap[colorVal]) {
+      // 精确匹配
       factoryInput.value = colorMap[colorVal];
     } else if (colorVal && !colorVal.endsWith('#') && colorMap[colorVal + '#']) {
+      // 补#匹配
       factoryInput.value = colorMap[colorVal + '#'];
     } else if (colorVal) {
-      factoryInput.value = '';
-      factoryInput.placeholder = '未找到映射';
+      // 前缀模糊匹配：找以 colorVal 或 colorVal# 开头的 key
+      var matched = false;
+      var prefix = colorVal;
+      if (!prefix.endsWith('#')) prefix += '#';
+      for (var key in colorMap) {
+        if (key.startsWith(prefix)) {
+          factoryInput.value = colorMap[key];
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        factoryInput.value = '';
+        factoryInput.placeholder = '未找到映射';
+      }
     } else {
       factoryInput.value = '';
       factoryInput.placeholder = '工厂色号';
